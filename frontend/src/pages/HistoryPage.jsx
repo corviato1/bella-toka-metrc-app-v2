@@ -1,5 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { useAuthStore } from '../store/authStore'
 
 function PhotoIcon() {
   return (
@@ -31,6 +33,68 @@ const emptyFilters = {
   reporter: '',
 }
 
+const FILTER_KEYS = ['startDate', 'endDate', 'location', 'metrcStatus', 'reporter']
+
+function filtersFromSearchParams(sp) {
+  const f = { ...emptyFilters }
+  let any = false
+  for (const k of FILTER_KEYS) {
+    const v = sp.get(k)
+    if (v != null && v !== '') {
+      f[k] = v
+      any = true
+    }
+  }
+  return any ? f : null
+}
+
+function searchParamsFromFilters(filters) {
+  const sp = new URLSearchParams()
+  for (const k of FILTER_KEYS) {
+    const v = filters[k]
+    if (v && !(k === 'metrcStatus' && v === 'all')) {
+      sp.set(k, v)
+    }
+  }
+  return sp
+}
+
+function storageKey(username) {
+  return `bt-history-filters:${username || 'anon'}`
+}
+
+function readStoredFilters(username) {
+  try {
+    const raw = localStorage.getItem(storageKey(username))
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    const f = { ...emptyFilters }
+    let any = false
+    for (const k of FILTER_KEYS) {
+      if (typeof parsed?.[k] === 'string' && parsed[k] !== '') {
+        f[k] = parsed[k]
+        any = true
+      }
+    }
+    return any ? f : null
+  } catch {
+    return null
+  }
+}
+
+function writeStoredFilters(username, filters) {
+  try {
+    const isEmpty = JSON.stringify(filters) === JSON.stringify(emptyFilters)
+    if (isEmpty) {
+      localStorage.removeItem(storageKey(username))
+    } else {
+      localStorage.setItem(storageKey(username), JSON.stringify(filters))
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 function localDayBound(dateStr, endOfDay) {
   // dateStr is "YYYY-MM-DD" from <input type="date">. Build the boundary in
   // the user's local timezone so a "day" matches what they see on the calendar.
@@ -60,6 +124,19 @@ function buildQuery(filters, offset, limit) {
 }
 
 export default function HistoryPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const { user } = useAuthStore()
+  const username = user?.username || ''
+
+  const initialFilters = useMemo(() => {
+    return (
+      filtersFromSearchParams(searchParams) ||
+      readStoredFilters(username) ||
+      emptyFilters
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const [reports, setReports] = useState([])
   const [total, setTotal] = useState(0)
   const [hasMore, setHasMore] = useState(false)
@@ -68,8 +145,8 @@ export default function HistoryPage() {
   const [error, setError] = useState('')
 
   const [locations, setLocations] = useState([])
-  const [filters, setFilters] = useState(emptyFilters)
-  const [appliedFilters, setAppliedFilters] = useState(emptyFilters)
+  const [filters, setFilters] = useState(initialFilters)
+  const [appliedFilters, setAppliedFilters] = useState(initialFilters)
 
   useEffect(() => {
     api.get('/api/locations')
@@ -99,6 +176,18 @@ export default function HistoryPage() {
   useEffect(() => {
     load(appliedFilters)
   }, [load, appliedFilters])
+
+  useEffect(() => {
+    const next = searchParamsFromFilters(appliedFilters)
+    const current = new URLSearchParams(searchParams)
+    current.sort()
+    next.sort()
+    if (current.toString() !== next.toString()) {
+      setSearchParams(next, { replace: true })
+    }
+    writeStoredFilters(username, appliedFilters)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appliedFilters, username])
 
   const loadMore = async () => {
     setLoadingMore(true)
