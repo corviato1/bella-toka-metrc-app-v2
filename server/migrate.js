@@ -19,19 +19,18 @@ async function migrate() {
   if (colCheck.rows.length > 0) {
     console.log('[Migrate] Renaming users.email → users.username')
     await query(`ALTER TABLE users RENAME COLUMN email TO username`)
-
-    const hasRole = await query(`
-      SELECT column_name FROM information_schema.columns
-      WHERE table_name = 'users' AND column_name = 'role'
-    `)
-    if (hasRole.rows.length > 0) {
-      console.log('[Migrate] Dropping users.role column')
-      await query(`ALTER TABLE users DROP COLUMN role`)
-    }
-
     await query(`ALTER TABLE users ALTER COLUMN username TYPE VARCHAR(50)`)
   } else {
     console.log('[Migrate] users.username already exists, skipping rename')
+  }
+
+  const hasRole = await query(`
+    SELECT column_name FROM information_schema.columns
+    WHERE table_name = 'users' AND column_name = 'role'
+  `)
+  if (hasRole.rows.length > 0) {
+    console.log('[Migrate] Dropping users.role column')
+    await query(`ALTER TABLE users DROP COLUMN role`)
   }
 
   const movColCheck = await query(`
