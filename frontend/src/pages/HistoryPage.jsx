@@ -316,6 +316,7 @@ export default function HistoryPage() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState('')
   const [selected, setSelected] = useState(null)
+  const [exporting, setExporting] = useState(false)
 
   const [locations, setLocations] = useState([])
   const [filters, setFilters] = useState(initialFilters)
@@ -404,6 +405,58 @@ export default function HistoryPage() {
     setAppliedFilters(emptyFilters)
   }
 
+  const onExportCsv = async () => {
+    setExporting(true)
+    setError('')
+    try {
+      const params = new URLSearchParams()
+      if (appliedFilters.startDate) {
+        const start = localDayBound(appliedFilters.startDate, false)
+        if (start) params.set('startDate', start.toISOString())
+      }
+      if (appliedFilters.endDate) {
+        const end = localDayBound(appliedFilters.endDate, true)
+        if (end) params.set('endDate', end.toISOString())
+      }
+      if (appliedFilters.location) params.set('location', appliedFilters.location)
+      if (appliedFilters.metrcStatus && appliedFilters.metrcStatus !== 'all') {
+        params.set('metrcStatus', appliedFilters.metrcStatus)
+      }
+      if (appliedFilters.reporter.trim()) params.set('reporter', appliedFilters.reporter.trim())
+
+      const { token } = useAuthStore.getState()
+      const res = await fetch(`/api/biowaste/reports.csv?${params.toString()}`, {
+        credentials: 'include',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      if (!res.ok) {
+        let msg = `Export failed (${res.status})`
+        try {
+          const data = await res.json()
+          if (data?.error) msg = data.error
+        } catch { /* ignore */ }
+        throw new Error(msg)
+      }
+      const blob = await res.blob()
+      const cd = res.headers.get('Content-Disposition') || ''
+      const m = /filename="?([^"]+)"?/i.exec(cd)
+      const filename = m ? m[1] : `biowaste-reports-${new Date().toISOString().slice(0, 10)}.csv`
+
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } catch (e) {
+      setError(e.message || 'Failed to export CSV')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const updateFilter = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }))
   }
@@ -423,13 +476,23 @@ export default function HistoryPage() {
                 : `Showing ${reports.length} of ${total} biowaste report${total === 1 ? '' : 's'}${hasActiveFilters ? ' (filtered)' : ''}`}
             </p>
           </div>
-          <button
-            onClick={() => load(appliedFilters)}
-            disabled={loading}
-            className="btn-secondary text-sm py-2 px-4"
-          >
-            Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onExportCsv}
+              disabled={exporting || loading || total === 0}
+              className="btn-secondary text-sm py-2 px-4 disabled:opacity-50"
+              title={total === 0 ? 'No reports to export' : 'Download current view as CSV'}
+            >
+              {exporting ? 'Exporting…' : 'Export CSV'}
+            </button>
+            <button
+              onClick={() => load(appliedFilters)}
+              disabled={loading}
+              className="btn-secondary text-sm py-2 px-4"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
 
         <form onSubmit={onApply} className="card grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 p-4">

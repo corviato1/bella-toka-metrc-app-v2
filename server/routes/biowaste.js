@@ -141,6 +141,84 @@ router.get('/reports', async (req, res) => {
   }
 })
 
+function parseListFilters(req) {
+  const { startDate, endDate, location, metrcStatus, reporter } = req.query
+  const conditions = []
+  const params = []
+  if (startDate) {
+    params.push(startDate)
+    conditions.push(`reported_at >= $${params.length}`)
+  }
+  if (endDate) {
+    params.push(endDate)
+    conditions.push(`reported_at <= $${params.length}`)
+  }
+  if (location) {
+    params.push(location)
+    conditions.push(`location_name = $${params.length}`)
+  }
+  if (metrcStatus === 'submitted') {
+    conditions.push(`metrc_submitted = TRUE`)
+  } else if (metrcStatus === 'not_submitted') {
+    conditions.push(`metrc_submitted = FALSE`)
+  }
+  if (reporter) {
+    params.push(`%${reporter}%`)
+    conditions.push(`reported_by ILIKE $${params.length}`)
+  }
+  const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
+  return { whereClause, params }
+}
+
+function csvEscape(value) {
+  if (value == null) return ''
+  const s = String(value)
+  if (/[",\n\r]/.test(s)) {
+    return `"${s.replace(/"/g, '""')}"`
+  }
+  return s
+}
+
+router.get('/reports.csv', async (req, res) => {
+  try {
+    const { whereClause, params } = parseListFilters(req)
+    const result = await query(
+      `SELECT id, reported_at, location_name, weight_value, weight_unit,
+              reported_by, metrc_submitted, photo_path
+       FROM biowaste_reports
+       ${whereClause}
+       ORDER BY reported_at DESC`,
+      params
+    )
+
+    const header = ['Report ID', 'Date', 'Location', 'Weight', 'Unit', 'Reporter', 'METRC Status', 'Photo']
+    const lines = [header.map(csvEscape).join(',')]
+    for (const r of result.rows) {
+      const dateStr = r.reported_at ? new Date(r.reported_at).toISOString() : ''
+      lines.push([
+        r.id,
+        dateStr,
+        r.location_name,
+        r.weight_value,
+        r.weight_unit,
+        r.reported_by,
+        r.metrc_submitted ? 'Submitted' : 'Not Submitted',
+        r.photo_path || '',
+      ].map(csvEscape).join(','))
+    }
+    const csv = '\uFEFF' + lines.join('\r\n') + '\r\n'
+
+    const stamp = new Date().toISOString().slice(0, 10)
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+    res.setHeader('Content-Disposition', `attachment; filename="biowaste-reports-${stamp}.csv"`)
+    res.setHeader('Cache-Control', 'no-store')
+    return res.send(csv)
+  } catch (err) {
+    console.error('[Biowaste] CSV export error:', err.message)
+    return res.status(500).json({ error: 'Failed to export reports' })
+  }
+})
+
 router.get('/reports/:id', async (req, res) => {
   const id = parseInt(req.params.id, 10)
   if (isNaN(id)) {
