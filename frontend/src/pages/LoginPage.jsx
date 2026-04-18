@@ -42,7 +42,9 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!username) {
+    const trimmedUsername = username.trim()
+    const trimmedPassword = password.trim()
+    if (!trimmedUsername) {
       setError('Please select a user.')
       return
     }
@@ -54,7 +56,7 @@ export default function LoginPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username: trimmedUsername, password: trimmedPassword }),
       })
 
       const data = await res.json()

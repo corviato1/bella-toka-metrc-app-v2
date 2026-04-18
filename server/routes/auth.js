@@ -20,7 +20,12 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Invalid username or password' })
     }
 
-    const { username, password } = parsed.data
+    const username = parsed.data.username.trim()
+    const password = parsed.data.password.trim()
+
+    if (!username) {
+      return res.status(400).json({ error: 'Invalid username or password' })
+    }
 
     const result = await query(
       'SELECT id, username, password_hash FROM users WHERE username = $1',
