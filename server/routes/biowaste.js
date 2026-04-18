@@ -172,7 +172,12 @@ function parseListFilters(req) {
 
 function csvEscape(value) {
   if (value == null) return ''
-  const s = String(value)
+  let s = String(value)
+  // Mitigate CSV formula injection: prefix any cell starting with =, +, -, @,
+  // tab, or carriage return with a single quote so spreadsheets treat it as text.
+  if (/^[=+\-@\t\r]/.test(s)) {
+    s = "'" + s
+  }
   if (/[",\n\r]/.test(s)) {
     return `"${s.replace(/"/g, '""')}"`
   }
