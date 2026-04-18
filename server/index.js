@@ -76,8 +76,8 @@ async function start() {
     console.warn('[Server] DATABASE_URL not set — skipping DB initialization')
   }
 
-  app.listen(PORT, 'localhost', () => {
-    console.log(`[Server] API server running on http://localhost:${PORT}`)
+  app.listen(PORT, '127.0.0.1', () => {
+    console.log(`[Server] API server running on http://127.0.0.1:${PORT}`)
   })
 }
 
