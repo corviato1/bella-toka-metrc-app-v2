@@ -68,14 +68,73 @@ router.post('/report', async (req, res) => {
 
 router.get('/reports', async (req, res) => {
   try {
+    const {
+      startDate,
+      endDate,
+      location,
+      metrcStatus,
+      reporter,
+    } = req.query
+
+    let limit = parseInt(req.query.limit, 10)
+    if (isNaN(limit) || limit <= 0) limit = 50
+    if (limit > 200) limit = 200
+
+    let offset = parseInt(req.query.offset, 10)
+    if (isNaN(offset) || offset < 0) offset = 0
+
+    const conditions = []
+    const params = []
+
+    if (startDate) {
+      params.push(startDate)
+      conditions.push(`reported_at >= $${params.length}`)
+    }
+    if (endDate) {
+      params.push(endDate)
+      conditions.push(`reported_at <= $${params.length}`)
+    }
+    if (location) {
+      params.push(location)
+      conditions.push(`location_name = $${params.length}`)
+    }
+    if (metrcStatus === 'submitted') {
+      conditions.push(`metrc_submitted = TRUE`)
+    } else if (metrcStatus === 'not_submitted') {
+      conditions.push(`metrc_submitted = FALSE`)
+    }
+    if (reporter) {
+      params.push(`%${reporter}%`)
+      conditions.push(`reported_by ILIKE $${params.length}`)
+    }
+
+    const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
+
+    const countResult = await query(
+      `SELECT COUNT(*)::int AS total FROM biowaste_reports ${whereClause}`,
+      params
+    )
+    const total = countResult.rows[0].total
+
+    params.push(limit)
+    params.push(offset)
     const result = await query(
       `SELECT id, photo_path, location_name, weight_value, weight_unit,
               reported_by, metrc_submitted, reported_at
        FROM biowaste_reports
+       ${whereClause}
        ORDER BY reported_at DESC
-       LIMIT 50`
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
     )
-    return res.json({ reports: result.rows })
+
+    return res.json({
+      reports: result.rows,
+      total,
+      limit,
+      offset,
+      hasMore: offset + result.rows.length < total,
+    })
   } catch (err) {
     console.error('[Biowaste] List error:', err.message)
     return res.status(500).json({ error: 'Failed to fetch reports' })
