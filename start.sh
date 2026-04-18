@@ -1,10 +1,19 @@
 #!/bin/bash
-# Start backend API server
+set -e
+
+if [ -n "$DATABASE_URL" ]; then
+  echo "[start.sh] Running DB migrations..."
+  node server/migrate.js
+  echo "[start.sh] Migrations complete."
+fi
+
+set +e
+
 node server/index.js &
 BACKEND_PID=$!
 
-# Start frontend dev server
+sleep 2
+
 cd frontend && npm run dev
 
-# If frontend exits, kill backend too
 kill $BACKEND_PID 2>/dev/null

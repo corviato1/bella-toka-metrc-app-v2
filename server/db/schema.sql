@@ -29,6 +29,24 @@ CREATE TABLE IF NOT EXISTS movements (
   timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS biowaste_reports (
+  id SERIAL PRIMARY KEY,
+  photo_path VARCHAR(500),
+  location_name VARCHAR(255) NOT NULL,
+  weight_value NUMERIC(10,3) NOT NULL,
+  weight_unit VARCHAR(10) NOT NULL DEFAULT 'lbs',
+  reported_by VARCHAR(50),
+  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  metrc_response JSONB,
+  metrc_submitted BOOLEAN NOT NULL DEFAULT FALSE,
+  reported_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS sync_log (
+  key VARCHAR(100) PRIMARY KEY,
+  synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 INSERT INTO locations (name) VALUES
   ('Veg Room A'),
   ('Veg Room B'),

@@ -4,7 +4,6 @@ const { query } = require('../db/pool')
 const { requireAuth } = require('../middleware/auth')
 
 const router = express.Router()
-
 router.use(requireAuth)
 
 router.get('/list', async (req, res) => {
@@ -14,6 +13,51 @@ router.get('/list', async (req, res) => {
   } catch (err) {
     console.error('[Plants] List error:', err.message)
     return res.status(500).json({ error: 'Failed to fetch plants' })
+  }
+})
+
+router.get('/summary', async (req, res) => {
+  try {
+    const locResult = await query('SELECT id, name FROM locations ORDER BY name ASC')
+    const locations = locResult.rows
+
+    const plantCounts = await query(`
+      SELECT current_location, COUNT(*) as count
+      FROM plants
+      WHERE current_location IS NOT NULL
+      GROUP BY current_location
+    `)
+
+    const lastMoves = await query(`
+      SELECT DISTINCT ON (to_location) to_location, timestamp
+      FROM movements
+      ORDER BY to_location, timestamp DESC
+    `)
+
+    const syncResult = await query(`SELECT synced_at FROM sync_log WHERE key = 'plants'`)
+    const lastSync = syncResult.rows[0]?.synced_at || null
+
+    const countMap = {}
+    for (const row of plantCounts.rows) {
+      countMap[row.current_location] = parseInt(row.count)
+    }
+
+    const moveMap = {}
+    for (const row of lastMoves.rows) {
+      moveMap[row.to_location] = row.timestamp
+    }
+
+    const summary = locations.map((loc) => ({
+      id: loc.id,
+      name: loc.name,
+      plantCount: countMap[loc.name] || 0,
+      lastMovement: moveMap[loc.name] || null,
+    }))
+
+    return res.json({ summary, lastSync })
+  } catch (err) {
+    console.error('[Plants] Summary error:', err.message)
+    return res.status(500).json({ error: 'Failed to fetch summary' })
   }
 })
 
@@ -42,6 +86,7 @@ router.post('/move', async (req, res) => {
         )
 
         let plant
+        let fromLoc = null
         if (plantResult.rows.length === 0) {
           const insertResult = await query(
             'INSERT INTO plants (metrc_tag, current_location) VALUES ($1, $2) RETURNING id, metrc_tag, current_location',
@@ -50,6 +95,7 @@ router.post('/move', async (req, res) => {
           plant = insertResult.rows[0]
         } else {
           plant = plantResult.rows[0]
+          fromLoc = plant.current_location
           await query(
             'UPDATE plants SET current_location = $1 WHERE id = $2',
             [newLocation, plant.id]
@@ -59,7 +105,7 @@ router.post('/move', async (req, res) => {
         await query(
           `INSERT INTO movements (plant_id, plant_metrc_tag, from_location, to_location, user_id, username)
            VALUES ($1, $2, $3, $4, $5, $6)`,
-          [plant.id, cleanTag, plant.current_location, newLocation, req.user.id, req.user.username]
+          [plant.id, cleanTag, fromLoc, newLocation, req.user.id, req.user.username]
         )
 
         results.push({ plantId: cleanTag, success: true })
