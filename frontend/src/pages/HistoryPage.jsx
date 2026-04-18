@@ -11,6 +11,14 @@ function PhotoIcon() {
   )
 }
 
+function CloseIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  )
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return '—'
   const d = new Date(dateStr)
@@ -123,6 +131,170 @@ function buildQuery(filters, offset, limit) {
   return params.toString()
 }
 
+function extractMetrcDetail(resp) {
+  if (!resp) return null
+  if (typeof resp === 'string') return resp
+  if (resp.error) return typeof resp.error === 'string' ? resp.error : JSON.stringify(resp.error)
+  if (resp.message) return resp.message
+  if (resp.submittedAt || resp.submitted_at) {
+    return `Submitted at ${formatDate(resp.submittedAt || resp.submitted_at)}`
+  }
+  return null
+}
+
+function ReportDetailModal({ reportId, summary, onClose }) {
+  const [detail, setDetail] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setError('')
+    api
+      .get(`/api/biowaste/reports/${reportId}`)
+      .then((res) => {
+        if (!cancelled) setDetail(res.report)
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e.message || 'Failed to load report')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [reportId])
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const r = detail || summary || {}
+  const metrcDetail = extractMetrcDetail(r.metrc_response)
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-charcoal-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col lg:flex-row"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Report details"
+      >
+        <div className="lg:w-1/2 bg-gray-100 dark:bg-charcoal-900 flex items-center justify-center min-h-[240px] lg:min-h-0 lg:max-h-[90vh] overflow-hidden">
+          {r.photo_path ? (
+            <img
+              src={r.photo_path}
+              alt="Biowaste report"
+              className="w-full h-full object-contain max-h-[40vh] lg:max-h-[90vh]"
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-2 text-gray-400 dark:text-gray-500 p-8">
+              <PhotoIcon />
+              <p className="text-sm">No photo attached</p>
+            </div>
+          )}
+        </div>
+
+        <div className="lg:w-1/2 flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-charcoal-700">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+              Report #{r.id ?? '—'}
+            </h2>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-charcoal-700 text-gray-500 dark:text-gray-400"
+              aria-label="Close"
+            >
+              <CloseIcon />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-auto p-4 flex flex-col gap-4">
+            {loading && (
+              <p className="text-sm text-gray-500 dark:text-gray-400">Loading details…</p>
+            )}
+            {error && (
+              <div className="text-sm text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700 rounded-lg p-2">
+                {error}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+              <div>
+                <p className="text-xs text-gray-400 dark:text-gray-500">Reported At</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {formatDate(r.reported_at)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 dark:text-gray-500">Reporter</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {r.reported_by || '—'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 dark:text-gray-500">Location</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {r.location_name || '—'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 dark:text-gray-500">Weight</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {r.weight_value != null
+                    ? `${Number(r.weight_value).toLocaleString(undefined, { maximumFractionDigits: 3 })} ${r.weight_unit || ''}`
+                    : '—'}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">METRC Status</p>
+              <div className="flex items-center gap-2">
+                {r.metrc_submitted ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                    Submitted
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
+                    Not Submitted
+                  </span>
+                )}
+              </div>
+              {metrcDetail && (
+                <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">{metrcDetail}</p>
+              )}
+            </div>
+
+            {r.metrc_response && (
+              <div>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">METRC Response</p>
+                <pre className="text-xs bg-gray-50 dark:bg-charcoal-900 border border-gray-200 dark:border-charcoal-700 rounded-lg p-2 overflow-auto max-h-48 text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">
+{typeof r.metrc_response === 'string'
+  ? r.metrc_response
+  : JSON.stringify(r.metrc_response, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function HistoryPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { user } = useAuthStore()
@@ -143,6 +315,7 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState('')
+  const [selected, setSelected] = useState(null)
 
   const [locations, setLocations] = useState([])
   const [filters, setFilters] = useState(initialFilters)
@@ -354,9 +527,12 @@ export default function HistoryPage() {
 
         <div className="flex flex-col gap-2">
           {reports.map((r) => (
-            <div
+            <button
               key={r.id}
-              className="card flex items-center gap-4 p-3"
+              type="button"
+              onClick={() => setSelected(r)}
+              className="card flex items-center gap-4 p-3 text-left w-full hover:bg-gray-50 dark:hover:bg-charcoal-700/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors"
+              aria-label={`View details for report ${r.id}`}
             >
               <div className="flex-shrink-0 w-16 h-16 rounded-xl bg-gray-200 dark:bg-charcoal-700 border border-gray-200 dark:border-charcoal-600 overflow-hidden flex items-center justify-center text-gray-400 dark:text-gray-500 relative">
                 <PhotoIcon />
@@ -409,7 +585,7 @@ export default function HistoryPage() {
                   )}
                 </div>
               </div>
-            </div>
+            </button>
           ))}
         </div>
 
@@ -425,6 +601,14 @@ export default function HistoryPage() {
           </div>
         )}
       </div>
+
+      {selected && (
+        <ReportDetailModal
+          reportId={selected.id}
+          summary={selected}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </div>
   )
 }

@@ -141,4 +141,27 @@ router.get('/reports', async (req, res) => {
   }
 })
 
+router.get('/reports/:id', async (req, res) => {
+  const id = parseInt(req.params.id, 10)
+  if (isNaN(id)) {
+    return res.status(400).json({ error: 'Invalid report id' })
+  }
+  try {
+    const result = await query(
+      `SELECT id, photo_path, location_name, weight_value, weight_unit,
+              reported_by, user_id, metrc_submitted, metrc_response, reported_at
+       FROM biowaste_reports
+       WHERE id = $1`,
+      [id]
+    )
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Report not found' })
+    }
+    return res.json({ report: result.rows[0] })
+  } catch (err) {
+    console.error('[Biowaste] Detail error:', err.message)
+    return res.status(500).json({ error: 'Failed to fetch report' })
+  }
+})
+
 module.exports = router
