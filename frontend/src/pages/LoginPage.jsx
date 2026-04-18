@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { useThemeStore } from '../store/themeStore'
@@ -19,16 +19,33 @@ function MoonIcon() {
   )
 }
 
+const USERS = [
+  { username: 'mike', label: 'Mike' },
+  { username: 'carmen', label: 'Carmen' },
+]
+
 export default function LoginPage() {
   const navigate = useNavigate()
   const { login } = useAuthStore()
   const { theme, toggleTheme } = useThemeStore()
-  const [form, setForm] = useState({ username: '', password: '' })
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const passwordRef = useRef(null)
+
+  const selectUser = (u) => {
+    setUsername(u)
+    setError('')
+    setTimeout(() => passwordRef.current?.focus(), 0)
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!username) {
+      setError('Please select a user.')
+      return
+    }
     setError('')
     setLoading(true)
 
@@ -37,7 +54,7 @@ export default function LoginPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(form),
+        body: JSON.stringify({ username, password }),
       })
 
       const data = await res.json()
@@ -66,37 +83,53 @@ export default function LoginPage() {
         {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
       </button>
 
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-sage-500 flex items-center justify-center text-white font-bold text-xl mx-auto mb-4 select-none">BT</div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Bella Toka</h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Plant Management System</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="card space-y-4">
+        <form onSubmit={handleSubmit} className="card space-y-5">
           <div>
-            <label className="block text-sm text-gray-500 dark:text-gray-400 mb-1.5">Username</label>
-            <input
-              type="text"
-              className="input-field"
-              placeholder="mike or carmen"
-              value={form.username}
-              onChange={(e) => setForm({ ...form, username: e.target.value })}
-              required
-              autoComplete="username"
-              autoCapitalize="none"
-            />
+            <label className="block text-sm text-gray-500 dark:text-gray-400 mb-2">Who's signing in?</label>
+            <div className="grid grid-cols-2 gap-3">
+              {USERS.map((u) => {
+                const selected = username === u.username
+                return (
+                  <button
+                    key={u.username}
+                    type="button"
+                    onClick={() => selectUser(u.username)}
+                    className={
+                      'h-24 rounded-2xl border-2 font-semibold text-lg transition-all flex flex-col items-center justify-center gap-1 ' +
+                      (selected
+                        ? 'border-sage-500 bg-sage-500 text-white shadow-md'
+                        : 'border-gray-200 dark:border-charcoal-600 bg-white dark:bg-charcoal-700 text-gray-800 dark:text-gray-200 hover:border-sage-400 hover:bg-sage-50 dark:hover:bg-charcoal-600')
+                    }
+                  >
+                    <div className={
+                      'w-10 h-10 rounded-full flex items-center justify-center text-base font-bold ' +
+                      (selected ? 'bg-white/20 text-white' : 'bg-sage-100 dark:bg-charcoal-600 text-sage-700 dark:text-sage-400')
+                    }>
+                      {u.label[0]}
+                    </div>
+                    <span>{u.label}</span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           <div>
             <label className="block text-sm text-gray-500 dark:text-gray-400 mb-1.5">Password</label>
             <input
+              ref={passwordRef}
               type="password"
               className="input-field"
               placeholder="••••••••"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
             />
           </div>
@@ -109,8 +142,8 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={loading}
-            className="btn-primary w-full flex items-center justify-center gap-2"
+            disabled={loading || !username}
+            className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>

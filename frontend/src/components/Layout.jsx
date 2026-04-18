@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { useThemeStore } from '../store/themeStore'
@@ -19,10 +19,10 @@ function MoonIcon() {
   )
 }
 
-function ChevronDownIcon() {
+function LogoutIcon() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
     </svg>
   )
 }
@@ -31,21 +31,8 @@ export default function Layout() {
   const { user, logout } = useAuthStore()
   const { theme, toggleTheme } = useThemeStore()
   const navigate = useNavigate()
-  const [menuOpen, setMenuOpen] = useState(false)
-  const menuRef = useRef(null)
-
-  useEffect(() => {
-    function handleClick(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setMenuOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
 
   const handleLogout = async () => {
-    setMenuOpen(false)
     await logout()
     navigate('/login')
   }
@@ -86,29 +73,20 @@ export default function Layout() {
             {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
           </button>
 
-          <div className="relative" ref={menuRef}>
-            <button
-              onClick={() => setMenuOpen((o) => !o)}
-              className="btn-ghost flex items-center gap-1.5 px-3 py-2"
-            >
-              <span className="text-sm font-medium capitalize">{user?.username || 'User'}</span>
-              <ChevronDownIcon />
-            </button>
-            {menuOpen && (
-              <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-charcoal-800 border border-gray-200 dark:border-charcoal-600 rounded-xl shadow-lg z-50 overflow-hidden">
-                <div className="px-4 py-2 border-b border-gray-100 dark:border-charcoal-700">
-                  <p className="text-xs text-gray-400 dark:text-gray-500">Signed in as</p>
-                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 capitalize">{user?.username}</p>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                >
-                  Sign Out
-                </button>
-              </div>
-            )}
-          </div>
+          {user?.username && (
+            <span className="text-sm text-gray-500 dark:text-gray-400 capitalize px-2 hidden sm:inline">
+              {user.username}
+            </span>
+          )}
+
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            title="Sign out"
+          >
+            <LogoutIcon />
+            <span>Sign Out</span>
+          </button>
         </div>
       </header>
 
