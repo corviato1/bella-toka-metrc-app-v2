@@ -135,7 +135,7 @@ export default function HistoryPage() {
       emptyFilters
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [username])
 
   const [reports, setReports] = useState([])
   const [total, setTotal] = useState(0)
@@ -178,16 +178,32 @@ export default function HistoryPage() {
   }, [load, appliedFilters])
 
   useEffect(() => {
-    const next = searchParamsFromFilters(appliedFilters)
-    const current = new URLSearchParams(searchParams)
-    current.sort()
-    next.sort()
-    if (current.toString() !== next.toString()) {
-      setSearchParams(next, { replace: true })
+    const filterParams = searchParamsFromFilters(appliedFilters)
+    // Merge: keep any non-filter params that may exist in the URL.
+    const merged = new URLSearchParams(searchParams)
+    for (const k of FILTER_KEYS) merged.delete(k)
+    for (const [k, v] of filterParams.entries()) merged.set(k, v)
+
+    const a = new URLSearchParams(searchParams); a.sort()
+    const b = new URLSearchParams(merged); b.sort()
+    if (a.toString() !== b.toString()) {
+      setSearchParams(merged, { replace: true })
     }
     writeStoredFilters(username, appliedFilters)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appliedFilters, username])
+
+  useEffect(() => {
+    if (!username) return
+    setFilters((current) => {
+      if (JSON.stringify(current) !== JSON.stringify(emptyFilters)) return current
+      const stored = readStoredFilters(username)
+      if (!stored) return current
+      setAppliedFilters(stored)
+      return stored
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [username])
 
   const loadMore = async () => {
     setLoadingMore(true)
