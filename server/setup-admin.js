@@ -3,8 +3,8 @@ const bcrypt = require('bcrypt')
 const { query, initDb } = require('./db/pool')
 
 const USERS = [
-  { username: 'mike', password: process.env.MIKE_PASSWORD || '0' },
-  { username: 'carmen', password: process.env.CARMEN_PASSWORD || '0' },
+  { username: 'mike', password: process.env.MIKE_PASSWORD || 'x' },
+  { username: 'carmen', password: process.env.CARMEN_PASSWORD || 'x' },
 ]
 
 async function seedUsers() {

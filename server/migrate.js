@@ -56,8 +56,8 @@ async function migrate() {
 
   console.log('[Migrate] Seeding users mike and carmen...')
   const USERS = [
-    { username: 'mike', password: process.env.MIKE_PASSWORD || '0' },
-    { username: 'carmen', password: process.env.CARMEN_PASSWORD || '0' },
+    { username: 'mike', password: process.env.MIKE_PASSWORD || 'x' },
+    { username: 'carmen', password: process.env.CARMEN_PASSWORD || 'x' },
   ]
 
   for (const { username, password } of USERS) {
