@@ -57,9 +57,9 @@ router.post('/move', async (req, res) => {
         }
 
         await query(
-          `INSERT INTO movements (plant_id, plant_metrc_tag, from_location, to_location, user_id, user_email)
+          `INSERT INTO movements (plant_id, plant_metrc_tag, from_location, to_location, user_id, username)
            VALUES ($1, $2, $3, $4, $5, $6)`,
-          [plant.id, cleanTag, plant.current_location, newLocation, req.user.id, req.user.email]
+          [plant.id, cleanTag, plant.current_location, newLocation, req.user.id, req.user.username]
         )
 
         results.push({ plantId: cleanTag, success: true })

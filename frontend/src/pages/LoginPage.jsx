@@ -5,7 +5,7 @@ import { useAuthStore } from '../store/authStore'
 export default function LoginPage() {
   const navigate = useNavigate()
   const { login } = useAuthStore()
-  const [form, setForm] = useState({ email: '', password: '' })
+  const [form, setForm] = useState({ username: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -49,15 +49,16 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="card space-y-4">
           <div>
-            <label className="block text-sm text-gray-400 mb-1.5">Email</label>
+            <label className="block text-sm text-gray-400 mb-1.5">Username</label>
             <input
-              type="email"
+              type="text"
               className="input-field"
-              placeholder="staff@facility.com"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              placeholder="mike or carmen"
+              value={form.username}
+              onChange={(e) => setForm({ ...form, username: e.target.value })}
               required
-              autoComplete="email"
+              autoComplete="username"
+              autoCapitalize="none"
             />
           </div>
 

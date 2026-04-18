@@ -11,20 +11,20 @@ const pool = new Pool({
 const JWT_SECRET = process.env.JWT_SECRET
 
 const loginSchema = z.object({
-  email: z.string().email().max(255),
+  username: z.string().min(1).max(50),
   password: z.string().min(1).max(128),
 })
 
-function cors(res = {}) {
+function cors(extra = {}) {
   return {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Content-Type': 'application/json',
-    ...res,
+    ...extra,
   }
 }
 
-exports.handler = async (event, context) => {
+exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers: cors() }
   }
@@ -40,14 +40,14 @@ exports.handler = async (event, context) => {
         return {
           statusCode: 400,
           headers: cors(),
-          body: JSON.stringify({ error: 'Invalid email or password format' }),
+          body: JSON.stringify({ error: 'Invalid username or password' }),
         }
       }
 
-      const { email, password } = parsed.data
+      const { username, password } = parsed.data
       const result = await pool.query(
-        'SELECT id, email, password_hash, role FROM users WHERE email = $1',
-        [email.toLowerCase()]
+        'SELECT id, username, password_hash FROM users WHERE username = $1',
+        [username.toLowerCase()]
       )
 
       if (result.rows.length === 0) {
@@ -61,14 +61,14 @@ exports.handler = async (event, context) => {
         return { statusCode: 401, headers: cors(), body: JSON.stringify({ error: 'Invalid credentials' }) }
       }
 
-      const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '8h' })
+      const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '8h' })
 
       return {
         statusCode: 200,
         headers: cors({
           'Set-Cookie': `token=${token}; HttpOnly; Secure; SameSite=Strict; Max-Age=28800; Path=/`,
         }),
-        body: JSON.stringify({ token, user: { id: user.id, email: user.email, role: user.role } }),
+        body: JSON.stringify({ token, user: { id: user.id, username: user.username } }),
       }
     } catch (err) {
       return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: 'Login failed' }) }

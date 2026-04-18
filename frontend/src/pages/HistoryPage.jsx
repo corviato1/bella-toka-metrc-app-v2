@@ -106,7 +106,7 @@ export default function HistoryPage() {
                       <td className="px-5 py-3 font-mono text-gray-300 text-xs">{m.plant_metrc_tag || m.plant_id}</td>
                       <td className="px-5 py-3 text-gray-400">{m.from_location || '—'}</td>
                       <td className="px-5 py-3 text-sage-400 font-medium">{m.to_location}</td>
-                      <td className="px-5 py-3 text-gray-500 text-xs">{m.user_email || '—'}</td>
+                      <td className="px-5 py-3 text-gray-500 text-xs capitalize">{m.username || '—'}</td>
                       <td className="px-5 py-3 text-gray-600 text-xs whitespace-nowrap">
                         {new Date(m.timestamp).toLocaleString()}
                       </td>

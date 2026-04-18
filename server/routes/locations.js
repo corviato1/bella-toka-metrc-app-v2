@@ -1,7 +1,7 @@
 const express = require('express')
 const { z } = require('zod')
 const { query } = require('../db/pool')
-const { requireAuth, requireAdmin } = require('../middleware/auth')
+const { requireAuth } = require('../middleware/auth')
 
 const router = express.Router()
 
@@ -19,7 +19,7 @@ const locationSchema = z.object({
   name: z.string().min(1).max(255),
 })
 
-router.post('/', requireAdmin, async (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
   try {
     const parsed = locationSchema.safeParse(req.body)
     if (!parsed.success) {
@@ -40,7 +40,7 @@ router.post('/', requireAdmin, async (req, res) => {
   }
 })
 
-router.put('/:id', requireAdmin, async (req, res) => {
+router.put('/:id', requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id)
     if (isNaN(id)) return res.status(400).json({ error: 'Invalid ID' })
@@ -69,7 +69,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
   }
 })
 
-router.delete('/:id', requireAdmin, async (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id)
     if (isNaN(id)) return res.status(400).json({ error: 'Invalid ID' })

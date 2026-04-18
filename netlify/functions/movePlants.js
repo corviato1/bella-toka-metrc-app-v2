@@ -120,8 +120,8 @@ exports.handler = async (event) => {
         }
 
         await pool.query(
-          'INSERT INTO movements (plant_id, plant_metrc_tag, from_location, to_location, user_id, user_email) VALUES ($1,$2,$3,$4,$5,$6)',
-          [plant.id, cleanTag, plant.current_location, newLocation, user.id, user.email]
+          'INSERT INTO movements (plant_id, plant_metrc_tag, from_location, to_location, user_id, username) VALUES ($1,$2,$3,$4,$5,$6)',
+          [plant.id, cleanTag, plant.current_location, newLocation, user.id, user.username]
         )
 
         results.push({ plantId: cleanTag, success: true })

@@ -1,11 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../api/client'
-import { useAuthStore } from '../store/authStore'
 
 export default function LocationsPage() {
-  const { user } = useAuthStore()
-  const isAdmin = user?.role === 'admin'
-
   const [locations, setLocations] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -89,29 +85,27 @@ export default function LocationsPage() {
         <div className="card border-red-800 bg-red-900/20 text-red-400 text-sm">{error}</div>
       )}
 
-      {isAdmin && (
-        <div className="card space-y-3">
-          <h3 className="font-semibold text-gray-100">Add Location</h3>
-          {actionError && (
-            <div className="bg-red-900/30 border border-red-700 text-red-400 text-sm px-3 py-2 rounded-lg">
-              {actionError}
-            </div>
-          )}
-          <div className="flex gap-2">
-            <input
-              type="text"
-              className="input-field flex-1"
-              placeholder="e.g. Veg Room A, Flower Room B..."
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-            />
-            <button onClick={handleAdd} disabled={adding} className="btn-primary px-5">
-              {adding ? '...' : 'Add'}
-            </button>
+      <div className="card space-y-3">
+        <h3 className="font-semibold text-gray-100">Add Location</h3>
+        {actionError && (
+          <div className="bg-red-900/30 border border-red-700 text-red-400 text-sm px-3 py-2 rounded-lg">
+            {actionError}
           </div>
+        )}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            className="input-field flex-1"
+            placeholder="e.g. Veg Room A, Flower Room B..."
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+          />
+          <button onClick={handleAdd} disabled={adding} className="btn-primary px-5">
+            {adding ? '...' : 'Add'}
+          </button>
         </div>
-      )}
+      </div>
 
       <div className="card">
         <h3 className="font-semibold text-gray-100 mb-4">All Locations ({locations.length})</h3>
@@ -144,22 +138,20 @@ export default function LocationsPage() {
                       <div className="w-2 h-2 rounded-full bg-sage-500" />
                       <span className="text-gray-200 font-medium">{loc.name}</span>
                     </div>
-                    {isAdmin && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => { setEditId(loc.id); setEditName(loc.name) }}
-                          className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded-lg hover:bg-charcoal-600"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(loc.id, loc.name)}
-                          className="text-xs text-red-500 hover:text-red-400 px-2 py-1 rounded-lg hover:bg-red-900/20"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    )}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { setEditId(loc.id); setEditName(loc.name) }}
+                        className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded-lg hover:bg-charcoal-600"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(loc.id, loc.name)}
+                        className="text-xs text-red-500 hover:text-red-400 px-2 py-1 rounded-lg hover:bg-red-900/20"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </>
                 )}
               </div>

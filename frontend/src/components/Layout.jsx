@@ -98,8 +98,7 @@ export default function Layout() {
         <div className="p-4 border-t border-charcoal-600">
           <div className="mb-3 px-4">
             <p className="text-xs text-gray-500">Signed in as</p>
-            <p className="text-sm text-gray-300 font-medium truncate">{user?.email || 'Unknown'}</p>
-            <p className="text-xs text-sage-400 capitalize">{user?.role || ''}</p>
+            <p className="text-sm text-gray-300 font-semibold capitalize">{user?.username || 'Unknown'}</p>
           </div>
           <button onClick={handleLogout} className="nav-link w-full text-red-400 hover:text-red-300 hover:bg-red-900/20">
             <LogoutIcon />

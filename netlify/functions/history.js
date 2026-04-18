@@ -54,12 +54,12 @@ exports.handler = async (event) => {
     let countQ, dataQ, args
 
     if (search) {
-      countQ = `SELECT COUNT(*) FROM movements WHERE plant_metrc_tag ILIKE $1 OR to_location ILIKE $1 OR from_location ILIKE $1 OR user_email ILIKE $1`
-      dataQ = `SELECT id, plant_id, plant_metrc_tag, from_location, to_location, user_id, user_email, timestamp FROM movements WHERE plant_metrc_tag ILIKE $1 OR to_location ILIKE $1 OR from_location ILIKE $1 OR user_email ILIKE $1 ORDER BY timestamp DESC LIMIT $2 OFFSET $3`
+      countQ = `SELECT COUNT(*) FROM movements WHERE plant_metrc_tag ILIKE $1 OR to_location ILIKE $1 OR from_location ILIKE $1 OR username ILIKE $1`
+      dataQ = `SELECT id, plant_id, plant_metrc_tag, from_location, to_location, user_id, username, timestamp FROM movements WHERE plant_metrc_tag ILIKE $1 OR to_location ILIKE $1 OR from_location ILIKE $1 OR username ILIKE $1 ORDER BY timestamp DESC LIMIT $2 OFFSET $3`
       args = [search, limit, offset]
     } else {
       countQ = 'SELECT COUNT(*) FROM movements'
-      dataQ = 'SELECT id, plant_id, plant_metrc_tag, from_location, to_location, user_id, user_email, timestamp FROM movements ORDER BY timestamp DESC LIMIT $1 OFFSET $2'
+      dataQ = 'SELECT id, plant_id, plant_metrc_tag, from_location, to_location, user_id, username, timestamp FROM movements ORDER BY timestamp DESC LIMIT $1 OFFSET $2'
       args = [limit, offset]
     }
 

@@ -29,17 +29,8 @@ function requireAuth(req, res, next) {
   }
 }
 
-function requireAdmin(req, res, next) {
-  requireAuth(req, res, () => {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Admin access required' })
-    }
-    next()
-  })
-}
-
 function signToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' })
 }
 
-module.exports = { requireAuth, requireAdmin, signToken }
+module.exports = { requireAuth, signToken }

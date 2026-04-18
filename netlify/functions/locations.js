@@ -36,9 +36,8 @@ exports.handler = async (event) => {
     return { statusCode: 204, headers: cors() }
   }
 
-  let user
   try {
-    user = verifyToken(event)
+    verifyToken(event)
   } catch {
     return { statusCode: 401, headers: cors(), body: JSON.stringify({ error: 'Unauthorized' }) }
   }
@@ -48,16 +47,12 @@ exports.handler = async (event) => {
   const id = pathParts[pathParts.length - 1]
   const hasId = id && !isNaN(parseInt(id))
 
+  const nameSchema = z.object({ name: z.string().min(1).max(255) })
+
   if (method === 'GET') {
     const result = await pool.query('SELECT id, name FROM locations ORDER BY name ASC')
     return { statusCode: 200, headers: cors(), body: JSON.stringify({ locations: result.rows }) }
   }
-
-  if (user.role !== 'admin') {
-    return { statusCode: 403, headers: cors(), body: JSON.stringify({ error: 'Admin required' }) }
-  }
-
-  const nameSchema = z.object({ name: z.string().min(1).max(255) })
 
   if (method === 'POST') {
     const parsed = nameSchema.safeParse(JSON.parse(event.body || '{}'))
