@@ -41,6 +41,7 @@ export default function Layout() {
     { to: '/', label: 'Report Biowaste', end: true },
     { to: '/move', label: 'Move Plants' },
     { to: '/where', label: 'What is Where' },
+    { to: '/history', label: 'History' },
   ]
 
   return (

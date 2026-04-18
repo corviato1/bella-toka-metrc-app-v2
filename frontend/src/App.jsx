@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage'
 import BiowastePage from './pages/BiowastePage'
 import MovePlantsPage from './pages/MovePlantsPage'
 import WhereIsWhatPage from './pages/WhereIsWhatPage'
+import HistoryPage from './pages/HistoryPage'
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuthStore()
@@ -42,6 +43,7 @@ export default function App() {
           <Route index element={<BiowastePage />} />
           <Route path="move" element={<MovePlantsPage />} />
           <Route path="where" element={<WhereIsWhatPage />} />
+          <Route path="history" element={<HistoryPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
