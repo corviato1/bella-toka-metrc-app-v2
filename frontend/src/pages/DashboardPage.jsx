@@ -103,7 +103,7 @@ export default function DashboardPage() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-gray-500">{m.user_email || 'Unknown'}</p>
+                  <p className="text-xs text-gray-500 capitalize">{m.username || 'Unknown'}</p>
                   <p className="text-xs text-gray-600">
                     {new Date(m.timestamp).toLocaleDateString()}
                   </p>
