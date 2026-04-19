@@ -40,7 +40,9 @@ exports.handler = async (event) => {
   }
 
   try {
-    const path = event.path.replace('/.netlify/functions/auth', '').replace('/api/auth', '')
+    const path = event.path
+      .replace('/.netlify/functions/auth', '')
+      .replace('/api/auth', '')
 
     if (event.httpMethod === 'POST' && (path === '/login' || path === '' || path === '/')) {
       const body = JSON.parse(event.body || '{}')
@@ -64,7 +66,11 @@ exports.handler = async (event) => {
       )
 
       if (result.rows.length === 0) {
-        return { statusCode: 401, headers: cors(), body: JSON.stringify({ error: 'Invalid credentials' }) }
+        return {
+          statusCode: 401,
+          headers: cors(),
+          body: JSON.stringify({ error: 'Invalid credentials' }),
+        }
       }
 
       const user = result.rows[0]
@@ -72,7 +78,11 @@ exports.handler = async (event) => {
       const match = await bcrypt.compare(password, user.password_hash)
 
       if (!match) {
-        return { statusCode: 401, headers: cors(), body: JSON.stringify({ error: 'Invalid credentials' }) }
+        return {
+          statusCode: 401,
+          headers: cors(),
+          body: JSON.stringify({ error: 'Invalid credentials' }),
+        }
       }
 
       const token = jwt.sign(
@@ -84,9 +94,13 @@ exports.handler = async (event) => {
       return {
         statusCode: 200,
         headers: cors({
-          'Set-Cookie': `token=${token}; HttpOnly; Secure; SameSite=Strict; Max-Age=28800; Path=/`,
+          // 🔥 FIXED COOKIE (THIS IS THE IMPORTANT PART)
+          'Set-Cookie': `token=${token}; HttpOnly; Secure; SameSite=None; Path=/; Max-Age=28800`,
         }),
-        body: JSON.stringify({ token, user: { id: user.id, username: user.username } }),
+        body: JSON.stringify({
+          token,
+          user: { id: user.id, username: user.username },
+        }),
       }
     }
 
@@ -94,13 +108,18 @@ exports.handler = async (event) => {
       return {
         statusCode: 200,
         headers: cors({
-          'Set-Cookie': 'token=; HttpOnly; Secure; SameSite=Strict; Max-Age=0; Path=/',
+          // also fix logout cookie
+          'Set-Cookie': 'token=; HttpOnly; Secure; SameSite=None; Max-Age=0; Path=/',
         }),
         body: JSON.stringify({ success: true }),
       }
     }
 
-    return { statusCode: 404, headers: cors(), body: JSON.stringify({ error: 'Not found' }) }
+    return {
+      statusCode: 404,
+      headers: cors(),
+      body: JSON.stringify({ error: 'Not found' }),
+    }
 
   } catch (err) {
     console.error('AUTH ERROR:', err)
