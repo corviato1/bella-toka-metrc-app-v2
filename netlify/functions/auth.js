@@ -25,14 +25,24 @@ function cors(extra = {}) {
 }
 
 exports.handler = async (event) => {
+  console.log('AUTH FUNCTION HIT')
+
+  if (!process.env.DATABASE_URL) {
+    console.error('MISSING DATABASE_URL')
+  }
+
+  if (!process.env.JWT_SECRET) {
+    console.error('MISSING JWT_SECRET')
+  }
+
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers: cors() }
   }
 
-  const path = event.path.replace('/.netlify/functions/auth', '').replace('/api/auth', '')
+  try {
+    const path = event.path.replace('/.netlify/functions/auth', '').replace('/api/auth', '')
 
-  if (event.httpMethod === 'POST' && (path === '/login' || path === '' || path === '/')) {
-    try {
+    if (event.httpMethod === 'POST' && (path === '/login' || path === '' || path === '/')) {
       const body = JSON.parse(event.body || '{}')
       const parsed = loginSchema.safeParse(body)
 
@@ -45,6 +55,9 @@ exports.handler = async (event) => {
       }
 
       const { username, password } = parsed.data
+
+      console.log('LOGIN ATTEMPT:', username)
+
       const result = await pool.query(
         'SELECT id, username, password_hash FROM users WHERE username = $1',
         [username.toLowerCase()]
@@ -55,13 +68,18 @@ exports.handler = async (event) => {
       }
 
       const user = result.rows[0]
+
       const match = await bcrypt.compare(password, user.password_hash)
 
       if (!match) {
         return { statusCode: 401, headers: cors(), body: JSON.stringify({ error: 'Invalid credentials' }) }
       }
 
-      const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '8h' })
+      const token = jwt.sign(
+        { id: user.id, username: user.username },
+        JWT_SECRET,
+        { expiresIn: '8h' }
+      )
 
       return {
         statusCode: 200,
@@ -70,20 +88,26 @@ exports.handler = async (event) => {
         }),
         body: JSON.stringify({ token, user: { id: user.id, username: user.username } }),
       }
-    } catch (err) {
-      return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: 'Login failed' }) }
     }
-  }
 
-  if (event.httpMethod === 'POST' && path === '/logout') {
+    if (event.httpMethod === 'POST' && path === '/logout') {
+      return {
+        statusCode: 200,
+        headers: cors({
+          'Set-Cookie': 'token=; HttpOnly; Secure; SameSite=Strict; Max-Age=0; Path=/',
+        }),
+        body: JSON.stringify({ success: true }),
+      }
+    }
+
+    return { statusCode: 404, headers: cors(), body: JSON.stringify({ error: 'Not found' }) }
+
+  } catch (err) {
+    console.error('AUTH ERROR:', err)
     return {
-      statusCode: 200,
-      headers: cors({
-        'Set-Cookie': 'token=; HttpOnly; Secure; SameSite=Strict; Max-Age=0; Path=/',
-      }),
-      body: JSON.stringify({ success: true }),
+      statusCode: 500,
+      headers: cors(),
+      body: JSON.stringify({ error: err.message || 'Login failed' }),
     }
   }
-
-  return { statusCode: 404, headers: cors(), body: JSON.stringify({ error: 'Not found' }) }
 }
