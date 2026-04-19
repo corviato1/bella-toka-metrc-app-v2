@@ -55,10 +55,21 @@ export default function WhereIsWhatPage() {
   const loadSummary = useCallback(async () => {
     setLoading(true)
     setError('')
+
     try {
-      const res = await api.get('/api/plants/summary')
-      setSummary(res.summary || [])
-      setDbLastSync(res.lastSync || null)
+      const res = await api.get('/api/where')
+
+      // 🔥 FIX: convert object → array safely
+      const summaryArray = Object.entries(res || {}).map(([name, plants], i) => ({
+        id: i,
+        name,
+        plantCount: Array.isArray(plants) ? plants.length : 0,
+        lastMovement: null,
+      }))
+
+      setSummary(summaryArray)
+      setDbLastSync(null)
+
     } catch (err) {
       setError(err.message)
     } finally {
@@ -69,12 +80,16 @@ export default function WhereIsWhatPage() {
   const doSync = useCallback(async (manual = false) => {
     setSyncing(true)
     setSyncError('')
+
     try {
       await api.get('/api/metrc/plants/sync')
+
       const now = Date.now()
       localStorage.setItem(SYNC_KEY, String(now))
       setLastSync(now)
+
       await loadSummary()
+
     } catch (err) {
       if (manual) setSyncError(err.message || 'Sync failed')
     } finally {
@@ -94,7 +109,7 @@ export default function WhereIsWhatPage() {
     }
   }, [])
 
-  const totalPlants = summary.reduce((sum, s) => sum + s.plantCount, 0)
+  const totalPlants = summary.reduce((sum, s) => sum + (s.plantCount || 0), 0)
 
   return (
     <div className="h-full flex flex-col p-4 gap-4">
@@ -105,6 +120,7 @@ export default function WhereIsWhatPage() {
             {totalPlants} total plant{totalPlants !== 1 ? 's' : ''} · {summary.length} section{summary.length !== 1 ? 's' : ''}
           </p>
         </div>
+
         <div className="flex items-center gap-3">
           <div className="text-right">
             <p className="text-xs text-gray-400 dark:text-gray-500">Last METRC sync</p>
@@ -112,6 +128,7 @@ export default function WhereIsWhatPage() {
               {lastSync ? formatSyncTime(lastSync) : dbLastSync ? formatSyncTime(dbLastSync) : 'Never'}
             </p>
           </div>
+
           <button
             onClick={() => doSync(true)}
             disabled={syncing || loading}
@@ -140,7 +157,7 @@ export default function WhereIsWhatPage() {
           <div className="h-full flex items-center justify-center">
             <svg className="animate-spin h-7 w-7 text-sage-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
           </div>
         ) : summary.length === 0 ? (
@@ -151,23 +168,23 @@ export default function WhereIsWhatPage() {
         ) : (
           <div className="grid grid-cols-3 xl:grid-cols-4 gap-4 content-start pb-2">
             {summary.map((section) => (
-              <div
-                key={section.id}
-                className="card flex flex-col gap-3"
-              >
+              <div key={section.id} className="card flex flex-col gap-3">
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-sm leading-tight">{section.name}</h3>
-                  <div className="w-7 h-7 rounded-lg bg-sage-500/15 dark:bg-sage-500/10 flex items-center justify-center text-sage-600 dark:text-sage-400 flex-shrink-0">
-                    <PlantIcon />
-                  </div>
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-sm leading-tight">
+                    {section.name}
+                  </h3>
+                  <PlantIcon />
                 </div>
+
                 <div>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{section.plantCount}</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">plant{section.plantCount !== 1 ? 's' : ''}</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                    {section.plantCount}
+                  </p>
                 </div>
-                <div className="border-t border-gray-100 dark:border-charcoal-700 pt-2">
-                  <p className="text-xs text-gray-400 dark:text-gray-500">Last moved in</p>
-                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mt-0.5">
+
+                <div className="border-t pt-2">
+                  <p className="text-xs text-gray-400">Last moved in</p>
+                  <p className="text-xs text-gray-600">
                     {formatRelative(section.lastMovement)}
                   </p>
                 </div>
