@@ -1,90 +1,63 @@
-import { create } from 'zustand'
+import React, { useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useAuthStore } from './store/authStore'
 
-const STORAGE_KEY = 'bella_auth'
+import Layout from './components/Layout'
+import LoginPage from './pages/LoginPage'
+import BiowastePage from './pages/BiowastePage'
+import MovePlantsPage from './pages/MovePlantsPage'
+import WhereIsWhatPage from './pages/WhereIsWhatPage'
+import HistoryPage from './pages/HistoryPage'
 
-function save(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+function ProtectedRoute({ children }) {
+  const { isAuthenticated } = useAuthStore()
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  return children
 }
 
-function load() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : null
-  } catch {
-    return null
-  }
+function PublicRoute({ children }) {
+  const { isAuthenticated } = useAuthStore()
+  if (isAuthenticated) return <Navigate to="/" replace />
+  return children
 }
 
-function clear() {
-  localStorage.removeItem(STORAGE_KEY)
+export default function App() {
+  const hydrate = useAuthStore((s) => s.hydrate)
+
+  useEffect(() => {
+    hydrate()
+  }, [])
+
+  return (
+    <BrowserRouter>
+      <Routes>
+
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <LoginPage />
+            </PublicRoute>
+          }
+        />
+
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<BiowastePage />} />
+          <Route path="move" element={<MovePlantsPage />} />
+          <Route path="where" element={<WhereIsWhatPage />} />
+          <Route path="history" element={<HistoryPage />} />
+        </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+
+      </Routes>
+    </BrowserRouter>
+  )
 }
-
-export const useAuthStore = create((set) => ({
-  user: null,
-  token: null,
-  isAuthenticated: false,
-  expiresAt: null,
-
-  hydrate: () => {
-    const saved = load()
-    if (!saved) return
-
-    const now = Date.now()
-
-    if (saved.expiresAt && now > saved.expiresAt) {
-      clear()
-      return
-    }
-
-    set({
-      user: saved.user,
-      token: saved.token,
-      isAuthenticated: true,
-      expiresAt: saved.expiresAt,
-    })
-  },
-
-  login: async (username, password) => {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    })
-
-    const data = await res.json()
-
-    if (!res.ok) {
-      throw new Error(data.error || 'Login failed')
-    }
-
-    const expiresAt = Date.now() + (24 * 60 * 60 * 1000)
-
-    const payload = {
-      user: data.user,
-      token: data.token,
-      expiresAt,
-    }
-
-    save(payload)
-
-    set({
-      user: data.user,
-      token: data.token,
-      isAuthenticated: true,
-      expiresAt,
-    })
-
-    return data
-  },
-
-  logout: () => {
-    clear()
-
-    set({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      expiresAt: null,
-    })
-  },
-}))
