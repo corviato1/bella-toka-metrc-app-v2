@@ -7,7 +7,6 @@ import BiowastePage from './pages/BiowastePage'
 import MovePlantsPage from './pages/MovePlantsPage'
 import WhereIsWhatPage from './pages/WhereIsWhatPage'
 import HistoryPage from './pages/HistoryPage'
-import DebugPage from './pages/DebugPage'
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuthStore()
@@ -26,7 +25,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
 
-        {/* 🔓 PUBLIC */}
+        {/* 🔓 LOGIN */}
         <Route
           path="/login"
           element={
@@ -36,10 +35,7 @@ export default function App() {
           }
         />
 
-        {/* 🔧 DEBUG (NO AUTH — IMPORTANT) */}
-        <Route path="/debug" element={<DebugPage />} />
-
-        {/* 🔐 PROTECTED APP */}
+        {/* 🔐 MAIN APP */}
         <Route
           path="/"
           element={
