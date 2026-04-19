@@ -6,26 +6,32 @@ export default function LoginPage() {
 
   const [selectedUser, setSelectedUser] = useState('mike')
   const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState(null)
-  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const users = [
-    { id: 'mike', label: 'Mike', initial: 'M' },
-    { id: 'carmen', label: 'Carmen', initial: 'C' },
-  ]
-
-  async function handleLogin() {
-    setError(null)
-    setLoading(true)
+  const handleLogin = async () => {
+    setError('')
 
     try {
-      await login(selectedUser, password)
-      // no manual redirect needed — router handles it
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: selectedUser,   // 🔴 THIS IS CRITICAL
+          password: password,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'Login failed')
+        return
+      }
+
+      login(data) // store token + user
+
     } catch (err) {
-      setError(err.message || 'Login failed')
-    } finally {
-      setLoading(false)
+      setError('Network error')
     }
   }
 
@@ -34,77 +40,59 @@ export default function LoginPage() {
       <div className="w-full max-w-md space-y-6">
 
         <div className="text-center">
-          <div className="w-14 h-14 bg-green-600 rounded-xl flex items-center justify-center mx-auto mb-3">
-            <span className="text-white font-bold text-lg">BT</span>
+          <div className="w-16 h-16 mx-auto bg-green-600 rounded-xl flex items-center justify-center text-white font-bold">
+            BT
           </div>
-          <h1 className="text-xl font-semibold">Bella Toka</h1>
-          <p className="text-sm text-gray-400">Plant Management System</p>
+          <h1 className="text-xl mt-2">Bella Toka</h1>
+          <p className="text-sm opacity-70">Plant Management System</p>
         </div>
 
-        <div className="card space-y-4">
+        <div className="bg-gray-900 p-6 rounded-xl space-y-4">
 
-          <div className="text-sm text-gray-400">Who's signing in?</div>
+          <p>Who's signing in?</p>
 
-          <div className="flex gap-3">
-            {users.map((u) => (
-              <button
-                key={u.id}
-                onClick={() => setSelectedUser(u.id)}
-                className={`flex-1 p-4 rounded-xl border transition ${
-                  selectedUser === u.id
-                    ? 'bg-green-600 text-white border-green-600'
-                    : 'bg-transparent border-gray-700'
-                }`}
-              >
-                <div className="w-8 h-8 rounded-full bg-black/30 flex items-center justify-center mx-auto mb-1">
-                  {u.initial}
-                </div>
-                <div>{u.label}</div>
-              </button>
-            ))}
+          <div className="flex gap-2">
+            <button
+              className={`flex-1 p-3 rounded-lg ${
+                selectedUser === 'mike' ? 'bg-green-600' : 'bg-gray-800'
+              }`}
+              onClick={() => setSelectedUser('mike')}
+            >
+              Mike
+            </button>
+
+            <button
+              className={`flex-1 p-3 rounded-lg ${
+                selectedUser === 'carmen' ? 'bg-green-600' : 'bg-gray-800'
+              }`}
+              onClick={() => setSelectedUser('carmen')}
+            >
+              Carmen
+            </button>
           </div>
 
-          <div className="space-y-2">
-            <div className="text-sm text-gray-400">Password</div>
-
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                className="input-field pr-12"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 hover:text-white"
-              >
-                {showPassword ? 'Hide' : 'Show'}
-              </button>
-            </div>
-          </div>
+          <input
+            type="password"
+            placeholder="Password"
+            className="w-full p-3 rounded bg-gray-800"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
 
           {error && (
-            <div className="text-red-500 text-sm bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+            <div className="bg-red-900 p-2 rounded text-sm">
               {error}
             </div>
           )}
 
           <button
             onClick={handleLogin}
-            disabled={loading}
-            className="btn-primary w-full"
+            className="w-full bg-green-600 p-3 rounded"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            Sign In
           </button>
 
         </div>
-
-        <p className="text-xs text-gray-500 text-center">
-          Restricted access — authorized personnel only
-        </p>
-
       </div>
     </div>
   )
