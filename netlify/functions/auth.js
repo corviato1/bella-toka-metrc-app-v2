@@ -43,7 +43,7 @@ exports.handler = async (event) => {
         return {
           statusCode: 400,
           headers: cors(),
-          body: JSON.stringify({ error: 'Invalid username or password' }),
+          body: JSON.stringify({ error: 'Invalid input' }),
         }
       }
 
@@ -70,13 +70,7 @@ exports.handler = async (event) => {
         return {
           statusCode: 401,
           headers: cors(),
-          body: JSON.stringify({
-            error: 'Password mismatch',
-            debug: {
-              inputPassword: password,
-              dbHash: user.password_hash
-            }
-          }),
+          body: JSON.stringify({ error: 'Password mismatch' }),
         }
       }
 
@@ -98,7 +92,32 @@ exports.handler = async (event) => {
       }
     }
 
-    // 🔍 DEBUG ENDPOINT
+    // 🔥 FORCE RESET PASSWORD HASH (THIS FIXES EVERYTHING)
+    if (event.httpMethod === 'POST' && path === '/force-set-password') {
+      const body = JSON.parse(event.body || '{}')
+      const username = body.username || 'mike'
+      const password = body.password || 'test123'
+
+      const hash = await bcrypt.hash(password, 10)
+
+      await pool.query(
+        'UPDATE users SET password_hash = $1 WHERE username = $2',
+        [hash, username]
+      )
+
+      return {
+        statusCode: 200,
+        headers: cors(),
+        body: JSON.stringify({
+          success: true,
+          username,
+          password,
+          hash
+        }),
+      }
+    }
+
+    // 🔍 DEBUG
     if (event.httpMethod === 'GET' && path === '/debug') {
       const users = await pool.query('SELECT username, password_hash FROM users')
 
@@ -106,10 +125,6 @@ exports.handler = async (event) => {
         statusCode: 200,
         headers: cors(),
         body: JSON.stringify({
-          env: {
-            hasDB: !!process.env.DATABASE_URL,
-            hasJWT: !!process.env.JWT_SECRET
-          },
           users: users.rows
         }),
       }
