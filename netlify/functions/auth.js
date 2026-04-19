@@ -25,16 +25,6 @@ function cors(extra = {}) {
 }
 
 exports.handler = async (event) => {
-  console.log('AUTH FUNCTION HIT')
-
-  if (!process.env.DATABASE_URL) {
-    console.error('MISSING DATABASE_URL')
-  }
-
-  if (!process.env.JWT_SECRET) {
-    console.error('MISSING JWT_SECRET')
-  }
-
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers: cors() }
   }
@@ -44,6 +34,9 @@ exports.handler = async (event) => {
       .replace('/.netlify/functions/auth', '')
       .replace('/api/auth', '')
 
+    // =========================
+    // 🔐 LOGIN
+    // =========================
     if (event.httpMethod === 'POST' && (path === '/login' || path === '' || path === '/')) {
       const body = JSON.parse(event.body || '{}')
       const parsed = loginSchema.safeParse(body)
@@ -57,8 +50,6 @@ exports.handler = async (event) => {
       }
 
       const { username, password } = parsed.data
-
-      console.log('LOGIN ATTEMPT:', username)
 
       const result = await pool.query(
         'SELECT id, username, password_hash FROM users WHERE username = $1',
@@ -94,7 +85,6 @@ exports.handler = async (event) => {
       return {
         statusCode: 200,
         headers: cors({
-          // 🔥 FIXED COOKIE (THIS IS THE IMPORTANT PART)
           'Set-Cookie': `token=${token}; HttpOnly; Secure; SameSite=None; Path=/; Max-Age=28800`,
         }),
         body: JSON.stringify({
@@ -104,14 +94,32 @@ exports.handler = async (event) => {
       }
     }
 
+    // =========================
+    // 🔐 LOGOUT
+    // =========================
     if (event.httpMethod === 'POST' && path === '/logout') {
       return {
         statusCode: 200,
         headers: cors({
-          // also fix logout cookie
           'Set-Cookie': 'token=; HttpOnly; Secure; SameSite=None; Max-Age=0; Path=/',
         }),
         body: JSON.stringify({ success: true }),
+      }
+    }
+
+    // =========================
+    // 🧪 DEBUG HASH (TEMP)
+    // =========================
+    if (event.httpMethod === 'POST' && path === '/debug-hash') {
+      const body = JSON.parse(event.body || '{}')
+      const password = body.password || 'test123'
+
+      const hash = await bcrypt.hash(password, 10)
+
+      return {
+        statusCode: 200,
+        headers: cors(),
+        body: JSON.stringify({ password, hash }),
       }
     }
 
