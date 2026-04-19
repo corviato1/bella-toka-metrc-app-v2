@@ -1,53 +1,29 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 
-export const useAuthStore = create(
-  persist(
-    (set) => ({
-      isAuthenticated: false,
-      user: null,
+export const useAuthStore = create((set) => ({
+  token: localStorage.getItem('token'),
+  user: JSON.parse(localStorage.getItem('user') || 'null'),
+  isAuthenticated: !!localStorage.getItem('token'),
+
+  login: (data) => {
+    localStorage.setItem('token', data.token)
+    localStorage.setItem('user', JSON.stringify(data.user))
+
+    set({
+      token: data.token,
+      user: data.user,
+      isAuthenticated: true,
+    })
+  },
+
+  logout: () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+
+    set({
       token: null,
-
-      // 🔥 REAL LOGIN (CALLS BACKEND)
-      login: async (username, password) => {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ username, password }),
-        })
-
-        const data = await res.json()
-
-        if (!res.ok) {
-          throw new Error(data.error || 'Login failed')
-        }
-
-        set({
-          isAuthenticated: true,
-          user: data.user,
-          token: data.token,
-        })
-      },
-
-      logout: async () => {
-        try {
-          await fetch('/api/auth/logout', {
-            method: 'POST',
-            credentials: 'include',
-          })
-        } catch {}
-
-        set({ isAuthenticated: false, user: null, token: null })
-      },
-    }),
-    {
-      name: 'auth-storage',
-      partialize: (state) => ({
-        isAuthenticated: state.isAuthenticated,
-        user: state.user,
-        token: state.token,
-      }),
-    }
-  )
-)
+      user: null,
+      isAuthenticated: false,
+    })
+  },
+}))
