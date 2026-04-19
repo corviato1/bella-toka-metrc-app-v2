@@ -21,6 +21,7 @@ export default function LoginPage() {
 
     try {
       await login(selectedUser, password)
+      // no manual redirect needed — router handles it
     } catch (err) {
       setError(err.message || 'Login failed')
     } finally {
@@ -32,7 +33,6 @@ export default function LoginPage() {
     <div className="h-full flex items-center justify-center p-6">
       <div className="w-full max-w-md space-y-6">
 
-        {/* Logo */}
         <div className="text-center">
           <div className="w-14 h-14 bg-green-600 rounded-xl flex items-center justify-center mx-auto mb-3">
             <span className="text-white font-bold text-lg">BT</span>
@@ -41,7 +41,6 @@ export default function LoginPage() {
           <p className="text-sm text-gray-400">Plant Management System</p>
         </div>
 
-        {/* Card */}
         <div className="card space-y-4">
 
           <div className="text-sm text-gray-400">Who's signing in?</div>
@@ -65,7 +64,6 @@ export default function LoginPage() {
             ))}
           </div>
 
-          {/* PASSWORD INPUT WITH TOGGLE */}
           <div className="space-y-2">
             <div className="text-sm text-gray-400">Password</div>
 
@@ -77,7 +75,6 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
 
-              {/* SHOW / HIDE BUTTON */}
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
@@ -95,18 +92,18 @@ export default function LoginPage() {
           )}
 
           <button
-            className="btn-primary w-full"
             onClick={handleLogin}
             disabled={loading}
+            className="btn-primary w-full"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
 
         </div>
 
-        <div className="text-xs text-gray-500 text-center">
+        <p className="text-xs text-gray-500 text-center">
           Restricted access — authorized personnel only
-        </div>
+        </p>
 
       </div>
     </div>

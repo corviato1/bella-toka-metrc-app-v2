@@ -8,14 +8,36 @@ export const useAuthStore = create(
       user: null,
       token: null,
 
-      login: (user, token) => set({ isAuthenticated: true, user, token }),
+      // 🔥 REAL LOGIN (CALLS BACKEND)
+      login: async (username, password) => {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ username, password }),
+        })
+
+        const data = await res.json()
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Login failed')
+        }
+
+        set({
+          isAuthenticated: true,
+          user: data.user,
+          token: data.token,
+        })
+      },
 
       logout: async () => {
         try {
-          await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
-        } catch (e) {
-          // ignore
-        }
+          await fetch('/api/auth/logout', {
+            method: 'POST',
+            credentials: 'include',
+          })
+        } catch {}
+
         set({ isAuthenticated: false, user: null, token: null })
       },
     }),
