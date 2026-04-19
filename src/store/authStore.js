@@ -5,15 +5,35 @@ export const useAuthStore = create((set) => ({
   token: null,
   isAuthenticated: false,
 
-  login: ({ user, token }) => {
+  login: async (username, password) => {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      throw new Error(data.error || 'Login failed')
+    }
+
     set({
-      user,
-      token,
+      user: data.user,
+      token: data.token,
       isAuthenticated: true,
     })
+
+    return data
   },
 
-  logout: () => {
+  logout: async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+      })
+    } catch {}
+
     set({
       user: null,
       token: null,
