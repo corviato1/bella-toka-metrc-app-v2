@@ -33,8 +33,13 @@ export default function Layout() {
   const navigate = useNavigate()
 
   const handleLogout = async () => {
-    await logout()
-    navigate('/login')
+    try {
+      await logout()
+    } catch (e) {
+      console.warn('Logout error:', e)
+    } finally {
+      navigate('/login')
+    }
   }
 
   const tabs = [
@@ -47,6 +52,7 @@ export default function Layout() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <header className="h-14 flex-shrink-0 bg-white dark:bg-charcoal-800 border-b border-gray-200 dark:border-charcoal-600 flex items-center px-4 gap-4">
+        
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="w-7 h-7 rounded-lg bg-sage-500 flex items-center justify-center text-white font-bold text-xs select-none">BT</div>
           <span className="font-bold text-gray-900 dark:text-gray-100 text-sm whitespace-nowrap">Bella Toka</span>
@@ -66,6 +72,7 @@ export default function Layout() {
         </nav>
 
         <div className="flex items-center gap-2 flex-shrink-0">
+
           <button
             onClick={toggleTheme}
             className="btn-ghost p-2 rounded-xl"
@@ -74,9 +81,9 @@ export default function Layout() {
             {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
           </button>
 
-          {user?.username && (
+          {user && (
             <span className="text-sm text-gray-500 dark:text-gray-400 capitalize px-2 hidden sm:inline">
-              {user.username}
+              {typeof user === 'string' ? user : user.username}
             </span>
           )}
 
@@ -88,6 +95,7 @@ export default function Layout() {
             <LogoutIcon />
             <span>Sign Out</span>
           </button>
+
         </div>
       </header>
 

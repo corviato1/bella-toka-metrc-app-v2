@@ -1,28 +1,35 @@
+// Central API client with auth + safe JSON parsing
+
 import { useAuthStore } from '../store/authStore'
 
-async function request(path, options = {}) {
-  const { token } = useAuthStore.getState()
+async function request(url, options = {}) {
+  const token = useAuthStore.getState().token
 
   const headers = {
     'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   }
 
-  const response = await fetch(path, {
-    ...options,
-    headers,
-    credentials: 'include',
-  })
-
-  if (response.status === 401) {
-    useAuthStore.getState().logout()
-    throw new Error('Session expired.')
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
   }
 
-  const data = await response.json()
+  const res = await fetch(url, {
+    ...options,
+    headers,
+  })
 
-  if (!response.ok) {
+  const text = await res.text()
+
+  let data
+  try {
+    data = text ? JSON.parse(text) : {}
+  } catch (e) {
+    console.error('Invalid JSON from server:', text)
+    throw new Error('Server returned invalid response')
+  }
+
+  if (!res.ok) {
     throw new Error(data.error || 'Request failed')
   }
 
@@ -30,6 +37,10 @@ async function request(path, options = {}) {
 }
 
 export const api = {
-  get: (path) => request(path),
-  post: (path, body) => request(path, { method: 'POST', body: JSON.stringify(body) }),
+  get: (url) => request(url),
+  post: (url, body) =>
+    request(url, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 }

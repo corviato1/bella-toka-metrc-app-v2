@@ -1,20 +1,29 @@
 const jwt = require('jsonwebtoken')
 
-const JWT_SECRET = process.env.JWT_SECRET
+const SECRET = process.env.JWT_SECRET
 
-exports.verifyAuth = (event) => {
-  const authHeader = event.headers.authorization || event.headers.Authorization
+function requireAuth(event) {
+  const header = event.headers.authorization
 
-  if (!authHeader) {
-    return { error: 'No token provided' }
+  if (!header) {
+    throw new Error('No token')
   }
 
-  const token = authHeader.replace('Bearer ', '')
+  const token = header.split(' ')[1]
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET)
-    return { user: decoded }
-  } catch (err) {
-    return { error: 'Invalid token' }
+    return jwt.verify(token, SECRET)
+  } catch {
+    throw new Error('Invalid token')
   }
 }
+
+function signToken(user) {
+  return jwt.sign(
+    { username: user },
+    SECRET,
+    { expiresIn: '12h' }
+  )
+}
+
+module.exports = { requireAuth, signToken }

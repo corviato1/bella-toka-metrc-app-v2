@@ -1,3 +1,4 @@
+const { metrcGet } = require('./_metrc')
 const { Pool } = require('pg')
 const { requireAuth } = require('./_auth')
 
@@ -7,25 +8,20 @@ const pool = new Pool({
 
 exports.handler = async (event) => {
   try {
-    const user = requireAuth(event)
+    requireAuth(event)
 
-    const { location, weight } = JSON.parse(event.body)
-
-    if (!location || !weight) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Missing fields' }),
-      }
-    }
+    const locations = await metrcGet('/locations/v2/active')
 
     const client = await pool.connect()
 
-    await client.query(
-      `INSERT INTO biowaste_reports
-       (location_name, weight_value, reported_by)
-       VALUES ($1, $2, $3)`,
-      [location, weight, user.username]
-    )
+    for (const loc of locations) {
+      await client.query(
+        `INSERT INTO locations (name)
+         VALUES ($1)
+         ON CONFLICT (name) DO NOTHING`,
+        [loc.Name]
+      )
+    }
 
     client.release()
 
