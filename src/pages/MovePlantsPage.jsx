@@ -1,70 +1,39 @@
 import React, { useEffect, useState } from 'react'
+import { api } from '../api/client'
 
 export default function MovePlantsPage() {
   const [locations, setLocations] = useState([])
-  const [selectedLocation, setSelectedLocation] = useState('')
-  const [tags, setTags] = useState([])
-  const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState('')
+
+  const [selectedLocation, setSelectedLocation] = useState('')
+  const [scannedTags, setScannedTags] = useState([])
+  const [input, setInput] = useState('')
 
   const loadLocations = async () => {
+    setLoading(true)
+    setError('')
+
     try {
-      const res = await fetch('/api/locations')
-      const data = await res.json()
-      setLocations(data)
-    } catch {
-      setError('Failed to load locations')
-    }
-  }
+      const res = await api.get('/api/locations')
 
-  const syncLocations = async () => {
-    try {
-      setLoading(true)
-      setError('')
-      await fetch('/api/metrcLocations')
-      await loadLocations()
-      alert('METRC locations synced')
-    } catch {
-      setError('Sync failed')
-    } finally {
-      setLoading(false)
-    }
-  }
+      // 🔥 CRITICAL FIX — normalize to array
+      let locArray = []
 
-  const addTag = () => {
-    if (!input) return
-    setTags([...tags, input])
-    setInput('')
-  }
-
-  const submitMove = async () => {
-    try {
-      setLoading(true)
-      setError('')
-      setSuccess('')
-
-      const res = await fetch('/api/movePlants', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tags,
-          toLocation: selectedLocation,
-        }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.error || 'Move failed')
-        return
+      if (Array.isArray(res)) {
+        locArray = res
+      } else if (res && typeof res === 'object') {
+        locArray = Object.values(res)
       }
 
-      setSuccess('Plants moved')
-      setTags([])
-    } catch {
-      setError('Network error')
+      setLocations(locArray)
+
+      if (locArray.length > 0) {
+        setSelectedLocation(locArray[0].name || locArray[0])
+      }
+
+    } catch (err) {
+      setError(err.message)
     } finally {
       setLoading(false)
     }
@@ -74,66 +43,84 @@ export default function MovePlantsPage() {
     loadLocations()
   }, [])
 
+  const handleScan = (e) => {
+    if (e.key === 'Enter' && input.trim()) {
+      setScannedTags((prev) => [...prev, input.trim()])
+      setInput('')
+    }
+  }
+
+  const handleSubmit = async () => {
+    try {
+      await api.post('/api/movePlants', {
+        tags: scannedTags,
+        to_location: selectedLocation,
+      })
+
+      setScannedTags([])
+      alert('Moved successfully')
+
+    } catch (err) {
+      alert(err.message)
+    }
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="p-4 flex flex-col gap-4 h-full">
 
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg">Move Plants</h2>
+      <h2 className="text-lg font-bold">Move Plants</h2>
 
-        <button
-          onClick={syncLocations}
-          className="bg-blue-600 px-3 py-1 rounded"
-        >
-          Sync METRC Locations
-        </button>
-      </div>
+      {error && (
+        <div className="text-red-500 text-sm">{error}</div>
+      )}
 
-      <select
-        className="w-full p-3 bg-gray-800 rounded"
-        value={selectedLocation}
-        onChange={(e) => setSelectedLocation(e.target.value)}
-      >
-        <option value="">Select Destination</option>
-        {locations.map((l, i) => (
-          <option key={i} value={l.name}>
-            {l.name}
-          </option>
-        ))}
-      </select>
+      {loading ? (
+        <div>Loading...</div>
+      ) : (
+        <>
+          {/* LOCATION SELECT */}
+          <select
+            value={selectedLocation}
+            onChange={(e) => setSelectedLocation(e.target.value)}
+            className="p-3 rounded bg-gray-800"
+          >
+            {locations.map((loc, i) => {
+              const name = loc.name || loc
+              return (
+                <option key={i} value={name}>
+                  {name}
+                </option>
+              )
+            })}
+          </select>
 
-      <div className="flex gap-2">
-        <input
-          className="flex-1 p-3 bg-gray-800 rounded"
-          placeholder="Scan / Enter Tag"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-        />
-        <button
-          onClick={addTag}
-          className="bg-green-600 px-4 rounded"
-        >
-          Add
-        </button>
-      </div>
+          {/* SCAN INPUT */}
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleScan}
+            placeholder="Scan METRC tag..."
+            className="p-3 rounded bg-gray-800"
+          />
 
-      <div className="flex flex-wrap gap-2">
-        {tags.map((t, i) => (
-          <div key={i} className="bg-gray-700 px-2 py-1 rounded text-sm">
-            {t}
+          {/* TAG LIST */}
+          <div className="bg-gray-900 p-3 rounded max-h-40 overflow-auto">
+            {scannedTags.map((tag, i) => (
+              <div key={i} className="text-sm">
+                {tag}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      {error && <div className="bg-red-900 p-2 rounded">{error}</div>}
-      {success && <div className="bg-green-900 p-2 rounded">{success}</div>}
-
-      <button
-        onClick={submitMove}
-        disabled={loading}
-        className="w-full bg-green-600 p-3 rounded"
-      >
-        Move Plants
-      </button>
+          {/* SUBMIT */}
+          <button
+            onClick={handleSubmit}
+            className="bg-green-600 p-3 rounded"
+          >
+            Move Plants
+          </button>
+        </>
+      )}
     </div>
   )
 }
