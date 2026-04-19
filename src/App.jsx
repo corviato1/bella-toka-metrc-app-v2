@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './store/authStore'
+
 import Layout from './components/Layout'
 import LoginPage from './pages/LoginPage'
 import BiowastePage from './pages/BiowastePage'
@@ -21,11 +22,16 @@ function PublicRoute({ children }) {
 }
 
 export default function App() {
+  const hydrate = useAuthStore((s) => s.hydrate)
+
+  useEffect(() => {
+    hydrate()
+  }, [])
+
   return (
     <BrowserRouter>
       <Routes>
 
-        {/* 🔓 LOGIN */}
         <Route
           path="/login"
           element={
@@ -35,7 +41,6 @@ export default function App() {
           }
         />
 
-        {/* 🔐 MAIN APP */}
         <Route
           path="/"
           element={
@@ -50,7 +55,6 @@ export default function App() {
           <Route path="history" element={<HistoryPage />} />
         </Route>
 
-        {/* 🔁 FALLBACK */}
         <Route path="*" element={<Navigate to="/" replace />} />
 
       </Routes>
