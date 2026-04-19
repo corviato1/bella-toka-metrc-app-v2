@@ -34,9 +34,7 @@ exports.handler = async (event) => {
       .replace('/.netlify/functions/auth', '')
       .replace('/api/auth', '')
 
-    // =========================
     // 🔐 LOGIN
-    // =========================
     if (event.httpMethod === 'POST' && (path === '/login' || path === '' || path === '/')) {
       const body = JSON.parse(event.body || '{}')
       const parsed = loginSchema.safeParse(body)
@@ -60,7 +58,7 @@ exports.handler = async (event) => {
         return {
           statusCode: 401,
           headers: cors(),
-          body: JSON.stringify({ error: 'Invalid credentials' }),
+          body: JSON.stringify({ error: 'User not found' }),
         }
       }
 
@@ -72,7 +70,13 @@ exports.handler = async (event) => {
         return {
           statusCode: 401,
           headers: cors(),
-          body: JSON.stringify({ error: 'Invalid credentials' }),
+          body: JSON.stringify({
+            error: 'Password mismatch',
+            debug: {
+              inputPassword: password,
+              dbHash: user.password_hash
+            }
+          }),
         }
       }
 
@@ -94,32 +98,20 @@ exports.handler = async (event) => {
       }
     }
 
-    // =========================
-    // 🔐 LOGOUT
-    // =========================
-    if (event.httpMethod === 'POST' && path === '/logout') {
-      return {
-        statusCode: 200,
-        headers: cors({
-          'Set-Cookie': 'token=; HttpOnly; Secure; SameSite=None; Max-Age=0; Path=/',
-        }),
-        body: JSON.stringify({ success: true }),
-      }
-    }
-
-    // =========================
-    // 🧪 DEBUG HASH (TEMP)
-    // =========================
-    if (event.httpMethod === 'POST' && path === '/debug-hash') {
-      const body = JSON.parse(event.body || '{}')
-      const password = body.password || 'test123'
-
-      const hash = await bcrypt.hash(password, 10)
+    // 🔍 DEBUG ENDPOINT
+    if (event.httpMethod === 'GET' && path === '/debug') {
+      const users = await pool.query('SELECT username, password_hash FROM users')
 
       return {
         statusCode: 200,
         headers: cors(),
-        body: JSON.stringify({ password, hash }),
+        body: JSON.stringify({
+          env: {
+            hasDB: !!process.env.DATABASE_URL,
+            hasJWT: !!process.env.JWT_SECRET
+          },
+          users: users.rows
+        }),
       }
     }
 
@@ -130,11 +122,11 @@ exports.handler = async (event) => {
     }
 
   } catch (err) {
-    console.error('AUTH ERROR:', err)
+    console.error(err)
     return {
       statusCode: 500,
       headers: cors(),
-      body: JSON.stringify({ error: err.message || 'Login failed' }),
+      body: JSON.stringify({ error: err.message }),
     }
   }
 }
