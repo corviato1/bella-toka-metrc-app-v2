@@ -9,16 +9,21 @@ const pool = new Pool({
 
 exports.handler = async (event) => {
   try {
-    requireAuth(event)
+    const user = requireAuth(event)
 
     const data = await metrcGet('/locations/v1/active')
 
+    if (!Array.isArray(data)) {
+      throw new Error('METRC did not return array')
+    }
+
     const client = await pool.connect()
+
     try {
       await client.query('BEGIN')
 
       for (const loc of data) {
-        if (!loc.Name) continue
+        if (!loc || !loc.Name) continue
 
         await client.query(
           `INSERT INTO locations (name)
@@ -38,13 +43,17 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      body: JSON.stringify(data.map((l) => l.Name)),
+      body: JSON.stringify(data),
     }
+
   } catch (err) {
-    const status = err.statusCode || 500
+    console.error('METRC LOCATIONS ERROR:', err)
+
     return {
-      statusCode: status,
-      body: JSON.stringify({ error: err.message }),
+      statusCode: err.statusCode || 500,
+      body: JSON.stringify({
+        error: err.message
+      }),
     }
   }
 }
