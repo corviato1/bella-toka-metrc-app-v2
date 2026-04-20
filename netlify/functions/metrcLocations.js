@@ -9,9 +9,16 @@ const pool = new Pool({
 
 exports.handler = async (event) => {
   try {
-    const user = requireAuth(event)
+    requireAuth(event)
 
-    const data = await metrcGet('/locations/v1/active')
+    const license = process.env.METRC_LICENSE_NUMBER
+    if (!license) {
+      throw new Error('Missing METRC_LICENSE_NUMBER')
+    }
+
+    const data = await metrcGet(
+      `/locations/v1/active?licenseNumber=${license}`
+    )
 
     if (!Array.isArray(data)) {
       throw new Error('METRC did not return array')
@@ -45,15 +52,10 @@ exports.handler = async (event) => {
       statusCode: 200,
       body: JSON.stringify(data),
     }
-
   } catch (err) {
-    console.error('METRC LOCATIONS ERROR:', err)
-
     return {
       statusCode: err.statusCode || 500,
-      body: JSON.stringify({
-        error: err.message
-      }),
+      body: JSON.stringify({ error: err.message }),
     }
   }
 }

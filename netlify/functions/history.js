@@ -11,7 +11,12 @@ exports.handler = async (event) => {
     requireAuth(event)
 
     const { rows } = await pool.query(`
-      SELECT *
+      SELECT
+        plant_metrc_tag,
+        from_location,
+        to_location,
+        username,
+        created_at
       FROM movements
       ORDER BY created_at DESC
       LIMIT 200
@@ -22,9 +27,8 @@ exports.handler = async (event) => {
       body: JSON.stringify(rows),
     }
   } catch (err) {
-    const status = err.statusCode || 500
     return {
-      statusCode: status,
+      statusCode: 500,
       body: JSON.stringify({ error: err.message }),
     }
   }
