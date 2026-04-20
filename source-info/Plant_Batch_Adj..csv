@@ -1,0 +1,3 @@
+PlantBatchName,Quantity,AdjustmentReason,ReasonNote,AdjustmentDate
+Testing Plant Batch,-2,Drying,,2023-01-20
+Testing Plant Batch,1,Scale Variance,We are obtaining a new certified scale,2023-01-20

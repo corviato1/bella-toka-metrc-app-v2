@@ -1,0 +1,7 @@
+PlantBatchName,AdditiveTypeName,ProductTradeName,EpaRegistrationNumber,ProductSupplier,ApplicationDevice,TotalAmountApplied,TotalAmountUnitOfMeasure,ActualDate,ActiveIngredientName,ActiveIngredientPercentage
+AK-47 Clone 3/10/2019 (123),Fertilizer,Wonder Sprout,EPA1234ABCD,G Labs,GreatDistributor 210lb,5,Gallons,12/15/2019 00:00:00,Phosporus,30
+AK-47 Clone 3/10/2019 (123),Fertilizer,Wonder Sprout,EPA1234ABCD,G Labs,GreatDistributor 210lb,5,Gallons,12/15/2019 00:00:00,Nitrogen,15
+AK-47 Clone 3/10/2019 (123),Fertilizer,Wonder Sprout,EPA1234ABCD,G Labs,GreatDistributor 210lb,5,Gallons,12/15/2019 00:00:00,Potassium,15
+AK-47 Clone 3/10/2019 (123),Fertilizer,Wonder Sprout,EPA1234ABCD,G Labs,GreatDistributor 210lb,5,Gallons,12/15/2019 00:00:00,Potassium,15
+Flo Seed 4/7/2019 (777),Pesticide,My Awesome Pesticide,RIDAPEST1234,Pesticides R Us,Pesticide Sprayer,5,Gallons,12/25/2019 00:00:00,Nitrogen,2
+Flo Seed 4/7/2019 (777),Pesticide,My Awesome Pesticide,RIDAPEST1234,Pesticides R Us,Pesticide Sprayer,5,Gallons,12/25/2019 00:00:00,Potassium,3
