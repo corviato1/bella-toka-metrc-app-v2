@@ -1,38 +1,49 @@
+const { requireAuth } = require('./_auth')
 const { metrcGet } = require('./_metrc')
 const { Pool } = require('pg')
-const { requireAuth } = require('./_auth')
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
 })
 
 exports.handler = async (event) => {
   try {
     requireAuth(event)
 
-    const locations = await metrcGet('/locations/v2/active')
+    const data = await metrcGet('/locations/v1/active')
 
     const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
 
-    for (const loc of locations) {
-      await client.query(
-        `INSERT INTO locations (name)
-         VALUES ($1)
-         ON CONFLICT (name) DO NOTHING`,
-        [loc.Name]
-      )
+      for (const loc of data) {
+        if (!loc.Name) continue
+
+        await client.query(
+          `INSERT INTO locations (name)
+           VALUES ($1)
+           ON CONFLICT (name) DO NOTHING`,
+          [loc.Name]
+        )
+      }
+
+      await client.query('COMMIT')
+    } catch (e) {
+      await client.query('ROLLBACK')
+      throw e
+    } finally {
+      client.release()
     }
-
-    client.release()
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ success: true }),
+      body: JSON.stringify(data.map((l) => l.Name)),
     }
-
   } catch (err) {
+    const status = err.statusCode || 500
     return {
-      statusCode: 500,
+      statusCode: status,
       body: JSON.stringify({ error: err.message }),
     }
   }
