@@ -22,7 +22,9 @@ function signToken(user) {
   return jwt.sign(
     { username: user },
     SECRET,
-    { expiresIn: '12h' }
+    {
+      expiresIn: '24h' // ✅ MATCH FRONTEND
+    }
   )
 }
 
