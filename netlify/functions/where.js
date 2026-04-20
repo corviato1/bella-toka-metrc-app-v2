@@ -7,8 +7,7 @@ const pool = new Pool({
 })
 
 function last4(tag) {
-  if (!tag) return ''
-  return tag.slice(-4)
+  return tag ? tag.slice(-4) : ''
 }
 
 exports.handler = async (event) => {
@@ -27,7 +26,12 @@ exports.handler = async (event) => {
 
     for (const row of rows) {
       const key = row.current_location
-      if (!map[key]) map[key] = []
+
+      if (!key) continue
+
+      if (!map[key]) {
+        map[key] = []
+      }
 
       map[key].push(last4(row.plant_metrc_tag))
     }
