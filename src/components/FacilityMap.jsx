@@ -2,12 +2,15 @@ import React from 'react'
 
 function Cell({ title, items }) {
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded p-2 text-xs min-h-[80px] flex flex-col">
+    <div className="bg-gray-800 border border-gray-700 rounded p-2 text-xs min-h-[120px] flex flex-col">
       <div className="text-green-400 font-bold mb-1">{title}</div>
 
-      <div className="flex flex-col">
+      {/* 🔥 FORCE VERTICAL STACK */}
+      <div className="flex flex-col gap-1 overflow-y-auto">
         {items?.map((i, idx) => (
-          <div key={idx}>{i}</div>
+          <div key={idx} className="whitespace-nowrap">
+            {i}
+          </div>
         ))}
       </div>
     </div>
@@ -26,8 +29,8 @@ export default function FacilityMap({ data }) {
         <Cell title="Veg2" items={data.R12C} />
       </div>
 
-      {/* FLOWER (VERTICAL STACK) */}
-      <div className="col-span-8 grid grid-rows-9 gap-2">
+      {/* FLOWER — EACH ROW IS VERTICAL STACK */}
+      <div className="col-span-8 grid grid-cols-9 gap-2">
         <Cell title="F1" items={data.R10A} />
         <Cell title="F2" items={data.R9A} />
         <Cell title="F3" items={data.R8A} />
