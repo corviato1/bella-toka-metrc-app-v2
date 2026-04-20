@@ -1,19 +1,38 @@
-const BASE = process.env.METRC_BASE_URL
-const KEY = process.env.METRC_API_KEY
+const fetch = require('node-fetch')
+
+function getAuthHeader() {
+  const key = process.env.METRC_API_KEY
+  if (!key) throw new Error('Missing METRC_API_KEY')
+
+  return {
+    Authorization: `Basic ${Buffer.from(key).toString('base64')}`,
+    'Content-Type': 'application/json',
+  }
+}
 
 async function metrcGet(path) {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: {
-      Authorization: `Basic ${Buffer.from(KEY).toString('base64')}`,
-    },
+  const base = process.env.METRC_BASE_URL
+  if (!base) throw new Error('Missing METRC_BASE_URL')
+
+  const res = await fetch(`${base}${path}`, {
+    method: 'GET',
+    headers: getAuthHeader(),
   })
 
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`METRC ERROR ${res.status}: ${text}`)
+  const text = await res.text()
+
+  let data
+  try {
+    data = JSON.parse(text)
+  } catch {
+    throw new Error(`Invalid JSON from METRC: ${text}`)
   }
 
-  return res.json()
+  if (!res.ok) {
+    throw new Error(`METRC ERROR ${res.status}: ${JSON.stringify(data)}`)
+  }
+
+  return data
 }
 
 module.exports = { metrcGet }

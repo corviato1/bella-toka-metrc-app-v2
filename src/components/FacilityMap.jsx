@@ -2,34 +2,35 @@ import React from 'react'
 
 function Cell({ title, items }) {
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded p-2 text-xs min-h-[120px] flex flex-col">
+    <div className="bg-gray-800 border border-gray-700 rounded p-2 text-xs min-h-[140px] flex flex-col">
       <div className="text-green-400 font-bold mb-1">{title}</div>
 
-      {/* 🔥 FORCE VERTICAL STACK */}
+      {/* vertical stack */}
       <div className="flex flex-col gap-1 overflow-y-auto">
-        {items?.map((i, idx) => (
-          <div key={idx} className="whitespace-nowrap">
-            {i}
-          </div>
-        ))}
+        {Array.isArray(items) &&
+          items.map((i, idx) => (
+            <div key={idx} className="whitespace-nowrap">
+              {i}
+            </div>
+          ))}
       </div>
     </div>
   )
 }
 
-export default function FacilityMap({ data }) {
+export default function FacilityMap({ data = {} }) {
   return (
     <div className="grid grid-cols-12 gap-2">
 
-      {/* VEG LEFT */}
-      <div className="col-span-2 flex flex-col gap-2">
+      {/* VEG (NOW SAME STYLE AS FLOWER) */}
+      <div className="col-span-2 grid grid-cols-1 gap-2">
         <Cell title="Veg3" items={data.R11B} />
         <Cell title="Veg4" items={data.R11C} />
         <Cell title="Veg1" items={data.R12B} />
         <Cell title="Veg2" items={data.R12C} />
       </div>
 
-      {/* FLOWER — EACH ROW IS VERTICAL STACK */}
+      {/* FLOWER */}
       <div className="col-span-8 grid grid-cols-9 gap-2">
         <Cell title="F1" items={data.R10A} />
         <Cell title="F2" items={data.R9A} />
@@ -42,8 +43,8 @@ export default function FacilityMap({ data }) {
         <Cell title="F9" items={data.R2A} />
       </div>
 
-      {/* HANG RIGHT */}
-      <div className="col-span-2 flex flex-col gap-2">
+      {/* HANG (NOW SAME STYLE AS FLOWER) */}
+      <div className="col-span-2 grid grid-cols-1 gap-2">
         <Cell title="H2" items={data.R1B} />
         <Cell title="H1" items={data.R1A} />
       </div>
