@@ -1,39 +1,36 @@
 const { requireAuth } = require('./_auth')
-const { Pool } = require('pg')
+const { metrcGet } = require('./_metrc')
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-})
-
-function last4(tag) {
-  return tag ? tag.slice(-4) : ''
+function last4(label) {
+  return label ? label.slice(-4) : ''
 }
 
 exports.handler = async (event) => {
   try {
     requireAuth(event)
 
-    const { rows } = await pool.query(`
-      SELECT
-        plant_metrc_tag,
-        current_location
-      FROM plants
-      WHERE current_location IS NOT NULL
-    `)
+    const license = process.env.METRC_LICENSE_NUMBER
+
+    const veg = await metrcGet(
+      `/plants/v2/vegetative?licenseNumber=${license}`
+    )
+
+    const flower = await metrcGet(
+      `/plants/v2/flowering?licenseNumber=${license}`
+    )
+
+    const all = [...veg, ...flower]
 
     const map = {}
 
-    for (const row of rows) {
-      const key = row.current_location
+    for (const plant of all) {
+      const loc = plant.LocationName
 
-      if (!key) continue
+      if (!loc) continue
 
-      if (!map[key]) {
-        map[key] = []
-      }
+      if (!map[loc]) map[loc] = []
 
-      map[key].push(last4(row.plant_metrc_tag))
+      map[loc].push(last4(plant.Label))
     }
 
     return {

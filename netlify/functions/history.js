@@ -1,35 +1,36 @@
 const { requireAuth } = require('./_auth')
-const { Pool } = require('pg')
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-})
+const { metrcGet } = require('./_metrc')
+const { query } = require('./_db')
 
 exports.handler = async (event) => {
   try {
     requireAuth(event)
 
-    const { rows } = await pool.query(`
-      SELECT
-        plant_metrc_tag,
-        from_location,
-        to_location,
-        username,
-        created_at
-      FROM movements
-      ORDER BY created_at DESC
-      LIMIT 200
-    `)
+    const license = process.env.METRC_LICENSE_NUMBER
+
+    const metrcHistory = await metrcGet(
+      `/plants/v2/vegetative?licenseNumber=${license}`
+    )
+
+    const local = await query(
+      `SELECT * FROM moves
+       UNION ALL
+       SELECT * FROM biowaste
+       ORDER BY created_at DESC
+       LIMIT 50`
+    )
 
     return {
       statusCode: 200,
-      body: JSON.stringify(rows),
+      body: JSON.stringify({
+        metrc: metrcHistory,
+        local: local.rows,
+      }),
     }
   } catch (err) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: err.message }),
+      body: err.message,
     }
   }
 }

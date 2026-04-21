@@ -1,52 +1,51 @@
-const { Pool } = require('pg')
 const { requireAuth } = require('./_auth')
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-})
+const { metrcPut } = require('./_metrc')
+const { query } = require('./_db')
 
 exports.handler = async (event) => {
   try {
-    const user = requireAuth(event)
+    requireAuth(event)
 
-    const { tags, toLocation } = JSON.parse(event.body)
+    const { labels, location } = JSON.parse(event.body)
+    const license = process.env.METRC_LICENSE_NUMBER
 
-    if (!tags || !toLocation) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Missing data' }),
-      }
+    if (!labels || !location) {
+      return { statusCode: 400, body: 'Missing data' }
     }
 
-    const client = await pool.connect()
+    // batch max 10 per METRC rules
+    const chunks = []
+    for (let i = 0; i < labels.length; i += 10) {
+      chunks.push(labels.slice(i, i + 10))
+    }
 
-    for (const tag of tags) {
-      await client.query(
-        `UPDATE plants
-         SET current_location = $1
-         WHERE metrc_tag = $2`,
-        [toLocation, tag]
-      )
+    for (const chunk of chunks) {
+      const payload = chunk.map(label => ({
+        Label: label,
+        LocationName: location,
+      }))
 
-      await client.query(
-        `INSERT INTO movements
-         (plant_metrc_tag, to_location, username)
-         VALUES ($1, $2, $3)`,
-        [tag, toLocation, user.username]
+      await metrcPut(
+        `/plants/v2/location?licenseNumber=${license}`,
+        payload
       )
     }
 
-    client.release()
+    // log to neon
+    await query(
+      `INSERT INTO moves (labels, location, created_at)
+       VALUES ($1, $2, NOW())`,
+      [labels, location]
+    )
 
     return {
       statusCode: 200,
       body: JSON.stringify({ success: true }),
     }
-
   } catch (err) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: err.message }),
+      body: err.message,
     }
   }
 }
