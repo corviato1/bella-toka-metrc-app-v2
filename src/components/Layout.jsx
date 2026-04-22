@@ -47,6 +47,7 @@ export default function Layout() {
     { to: '/move', label: 'Move Plants' },
     { to: '/where', label: 'What is Where' },
     { to: '/history', label: 'History' },
+    { to: '/offline', label: 'Offline Mode' },
   ]
 
   return (
@@ -58,7 +59,7 @@ export default function Layout() {
           <span className="font-bold text-gray-900 dark:text-gray-100 text-sm whitespace-nowrap">Bella Toka</span>
         </div>
 
-        <nav className="flex-1 flex items-center justify-center gap-1">
+        <nav className="flex-1 flex items-center justify-center gap-1 overflow-x-auto">
           {tabs.map((tab) => (
             <NavLink
               key={tab.to}
