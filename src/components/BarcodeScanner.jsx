@@ -1,23 +1,26 @@
 import { useState } from 'react'
 
 export default function BarcodeScanner({ onScan }) {
-  const [input, setInput] = useState('')
+  const [value, setValue] = useState('')
 
-  const handleEnter = (e) => {
+  const handleKey = (e) => {
     if (e.key === 'Enter') {
-      onScan(input.trim())
-      setInput('')
+      const v = value.trim()
+      if (!v) return
+
+      onScan(v)
+      setValue('')
     }
   }
 
   return (
     <input
       autoFocus
-      value={input}
-      onChange={(e) => setInput(e.target.value)}
-      onKeyDown={handleEnter}
-      placeholder="Scan barcode..."
-      style={{ fontSize: '20px', width: '100%' }}
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onKeyDown={handleKey}
+      placeholder="Scan or enter tag..."
+      className="input-field text-lg"
     />
   )
 }
