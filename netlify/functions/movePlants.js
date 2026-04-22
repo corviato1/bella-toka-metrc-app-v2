@@ -4,16 +4,19 @@ const { query } = require('./_db')
 
 exports.handler = async (event) => {
   try {
-    requireAuth(event)
+    const user = requireAuth(event)
 
     const { labels, location } = JSON.parse(event.body)
     const license = process.env.METRC_LICENSE_NUMBER
 
-    if (!labels || !location) {
-      return { statusCode: 400, body: 'Missing data' }
+    if (!labels || !labels.length || !location) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Missing labels or location' }),
+      }
     }
 
-    // batch max 10 per METRC rules
+    // 🔵 METRC BATCH (10 max)
     const chunks = []
     for (let i = 0; i < labels.length; i += 10) {
       chunks.push(labels.slice(i, i + 10))
@@ -31,21 +34,26 @@ exports.handler = async (event) => {
       )
     }
 
-    // log to neon
-    await query(
-      `INSERT INTO moves (labels, location, created_at)
-       VALUES ($1, $2, NOW())`,
-      [labels, location]
-    )
+    // 🔵 LOG EACH TAG (IMPORTANT)
+    for (const label of labels) {
+      await query(
+        `
+        INSERT INTO moves (labels, location, username, created_at)
+        VALUES ($1, $2, $3, NOW())
+        `,
+        [[label], location, user.username]
+      )
+    }
 
     return {
       statusCode: 200,
       body: JSON.stringify({ success: true }),
     }
+
   } catch (err) {
     return {
       statusCode: 500,
-      body: err.message,
+      body: JSON.stringify({ error: err.message }),
     }
   }
 }
