@@ -1,15 +1,23 @@
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import BarcodeScanner from '../components/BarcodeScanner'
 
 export default function OfflinePage() {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
+  const inputRef = useRef(null)
 
   const [scanning, setScanning] = useState(false)
   const [tags, setTags] = useState([])
   const [images, setImages] = useState([])
   const [location, setLocation] = useState('')
   const [msg, setMsg] = useState('')
+
+  // 🔵 FORCE FOCUS FOR SCANNER
+  useEffect(() => {
+    if (scanning && inputRef.current) {
+      inputRef.current.focus()
+    }
+  }, [scanning])
 
   // 🔵 START CAMERA
   const startCamera = async () => {
@@ -33,7 +41,7 @@ export default function OfflinePage() {
     setScanning(false)
   }
 
-  // 🔵 CAPTURE IMAGE
+  // 🔵 CAPTURE IMAGE (MANUAL BUTTON)
   const captureImage = () => {
     const video = videoRef.current
     const canvas = canvasRef.current
@@ -53,11 +61,10 @@ export default function OfflinePage() {
 
   // 🔵 ADD TAG
   const addTag = (tag) => {
+    if (!tag) return
     if (tags.includes(tag)) return
-    setTags(prev => [...prev, tag])
 
-    // capture image per scan
-    captureImage()
+    setTags(prev => [...prev, tag])
   }
 
   // 🔵 DOWNLOAD IMAGES
@@ -70,7 +77,7 @@ export default function OfflinePage() {
     })
   }
 
-  // 🔵 GENERATE CSV
+  // 🔵 DOWNLOAD CSV
   const downloadCSV = () => {
     if (!location) {
       setMsg('Select destination location')
@@ -97,7 +104,7 @@ export default function OfflinePage() {
     URL.revokeObjectURL(url)
   }
 
-  // 🔵 COMPLETE FLOW
+  // 🔵 FINALIZE
   const finalize = () => {
     stopCamera()
     downloadImages()
@@ -115,20 +122,35 @@ export default function OfflinePage() {
 
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* CONTROLS */}
+      {/* CAMERA CONTROLS */}
       <div className="flex gap-2">
         <button onClick={startCamera} className="btn-primary">
-          Start Scanning
+          Start Camera
         </button>
 
-        <button onClick={stopCamera} className="btn-secondary">
+        <button onClick={captureImage} className="btn-secondary">
+          Take Photo
+        </button>
+
+        <button onClick={stopCamera} className="btn-danger">
           Stop
         </button>
       </div>
 
       {/* SCANNER INPUT */}
       {scanning && (
-        <BarcodeScanner onScan={addTag} />
+        <input
+          ref={inputRef}
+          autoFocus
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              addTag(e.target.value.trim())
+              e.target.value = ''
+            }
+          }}
+          placeholder="Scan barcode..."
+          className="input-field text-lg"
+        />
       )}
 
       {/* TAG LIST */}
