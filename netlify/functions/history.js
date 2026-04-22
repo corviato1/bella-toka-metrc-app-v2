@@ -1,36 +1,60 @@
 const { requireAuth } = require('./_auth')
-const { metrcGet } = require('./_metrc')
 const { query } = require('./_db')
 
 exports.handler = async (event) => {
   try {
-    requireAuth(event)
+    const user = requireAuth(event)
 
-    const license = process.env.METRC_LICENSE_NUMBER
+    const { startDate, endDate, location, reporter } = event.queryStringParameters || {}
 
-    const metrcHistory = await metrcGet(
-      `/plants/v2/vegetative?licenseNumber=${license}`
-    )
+    let where = []
+    let values = []
 
-    const local = await query(
-      `SELECT * FROM moves
-       UNION ALL
-       SELECT * FROM biowaste
-       ORDER BY created_at DESC
-       LIMIT 50`
+    if (startDate) {
+      values.push(startDate)
+      where.push(`created_at >= $${values.length}`)
+    }
+
+    if (endDate) {
+      values.push(endDate)
+      where.push(`created_at <= $${values.length}`)
+    }
+
+    if (location) {
+      values.push(location)
+      where.push(`location = $${values.length}`)
+    }
+
+    if (reporter) {
+      values.push(reporter)
+      where.push(`username = $${values.length}`)
+    }
+
+    const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : ''
+
+    const res = await query(
+      `
+      SELECT 
+        created_at,
+        location,
+        labels,
+        username
+      FROM moves
+      ${whereClause}
+      ORDER BY created_at DESC
+      LIMIT 200
+      `,
+      values
     )
 
     return {
       statusCode: 200,
-      body: JSON.stringify({
-        metrc: metrcHistory,
-        local: local.rows,
-      }),
+      body: JSON.stringify(res.rows),
     }
   } catch (err) {
     return {
       statusCode: 500,
-      body: err.message,
+      body: JSON.stringify({ error: err.message }),
     }
   }
 }
