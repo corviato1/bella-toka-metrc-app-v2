@@ -1,27 +1,19 @@
-import React, { useRef, useState, useEffect } from 'react'
+import React, { useRef, useState } from 'react'
 import { api } from '../api/client'
 import { saveImage } from '../utils/localDB'
 
 export default function BiowastePage() {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
-  const inputRef = useRef(null)
+  const scannerRef = useRef(null)
 
   const [location, setLocation] = useState('')
   const [weight, setWeight] = useState('')
   const [image, setImage] = useState(null)
   const [msg, setMsg] = useState('')
-  const [paused, setPaused] = useState(false)
+  const [scannerMode, setScannerMode] = useState(false)
 
-  // 🔵 KEEP INPUT FOCUSED (scanner safety)
-  useEffect(() => {
-    const i = setInterval(() => {
-      if (!paused && inputRef.current) inputRef.current.focus()
-    }, 500)
-    return () => clearInterval(i)
-  }, [paused])
-
-  // 🔵 CAMERA
+  // CAMERA
   const startCamera = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment' },
@@ -34,7 +26,7 @@ export default function BiowastePage() {
     if (stream) stream.getTracks().forEach(t => t.stop())
   }
 
-  // 🔵 CAPTURE IMAGE
+  // CAPTURE
   const capture = () => {
     const video = videoRef.current
     const canvas = canvasRef.current
@@ -50,14 +42,13 @@ export default function BiowastePage() {
     setMsg('Image captured')
   }
 
-  // 🔵 SUBMIT
+  // SUBMIT
   const submit = async () => {
     if (!location) return setMsg('Enter location')
     if (!weight) return setMsg('Enter weight')
     if (!image) return setMsg('Capture image first')
 
     try {
-      // save locally
       await saveImage({
         id: Date.now(),
         type: 'biowaste',
@@ -67,16 +58,15 @@ export default function BiowastePage() {
         time: new Date().toISOString()
       })
 
-      // send to backend
       await api.post('/api/biowaste', {
         label: 'bulk',
         weight,
         location,
       })
 
-      setMsg('Biowaste logged')
-      setImage(null)
+      setMsg('Logged')
       setWeight('')
+      setImage(null)
     } catch (e) {
       setMsg(e.message)
     }
@@ -96,24 +86,23 @@ export default function BiowastePage() {
           <button onClick={stopCamera} className="btn-danger flex-1">Stop</button>
         </div>
 
-        {image && (
-          <img src={image} className="rounded-xl border" />
-        )}
+        {image && <img src={image} className="rounded-xl" />}
       </div>
 
       {/* RIGHT */}
       <div className="card space-y-3">
 
         <input
-          ref={inputRef}
           placeholder="Location"
           className="input-field"
+          value={location}
           onChange={(e) => setLocation(e.target.value)}
         />
 
         <input
           placeholder="Weight"
           className="input-field"
+          value={weight}
           onChange={(e) => setWeight(e.target.value)}
         />
 
@@ -122,11 +111,29 @@ export default function BiowastePage() {
         </button>
 
         <button
-          onClick={() => setPaused(!paused)}
+          onClick={() => {
+            setScannerMode(!scannerMode)
+            setTimeout(() => scannerRef.current?.focus(), 100)
+          }}
           className="btn-secondary w-full"
         >
-          {paused ? 'Resume' : 'Pause'}
+          {scannerMode ? 'Disable Scanner Mode' : 'Enable Scanner Mode'}
         </button>
+
+        {scannerMode && (
+          <input
+            ref={scannerRef}
+            autoFocus
+            placeholder="Scan here..."
+            className="input-field"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setMsg(`Scanned: ${e.target.value}`)
+                e.target.value = ''
+              }
+            }}
+          />
+        )}
 
         {msg && <div className="text-yellow-400">{msg}</div>}
       </div>
