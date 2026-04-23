@@ -9,6 +9,7 @@ import MovePlantsPage from './pages/MovePlantsPage'
 import WhereIsWhatPage from './pages/WhereIsWhatPage'
 import HistoryPage from './pages/HistoryPage'
 import OfflinePage from './pages/OfflinePage'
+import LogsPage from './pages/LogsPage'
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuthStore()
@@ -33,6 +34,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
 
+        {/* LOGIN */}
         <Route
           path="/login"
           element={
@@ -42,6 +44,7 @@ export default function App() {
           }
         />
 
+        {/* MAIN APP */}
         <Route
           path="/"
           element={
@@ -55,8 +58,10 @@ export default function App() {
           <Route path="where" element={<WhereIsWhatPage />} />
           <Route path="history" element={<HistoryPage />} />
           <Route path="offline" element={<OfflinePage />} />
+          <Route path="logs" element={<LogsPage />} />
         </Route>
 
+        {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/" replace />} />
 
       </Routes>
