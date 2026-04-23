@@ -1,203 +1,45 @@
-import React, { useRef, useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import BarcodeScanner from '../components/BarcodeScanner'
 
 export default function OfflinePage() {
-  const videoRef = useRef(null)
-  const canvasRef = useRef(null)
-  const inputRef = useRef(null)
-
-  const [scanning, setScanning] = useState(false)
   const [tags, setTags] = useState([])
-  const [images, setImages] = useState([])
   const [location, setLocation] = useState('')
-  const [msg, setMsg] = useState('')
 
-  // 🔵 FORCE FOCUS FOR SCANNER
-  useEffect(() => {
-    if (scanning && inputRef.current) {
-      inputRef.current.focus()
-    }
-  }, [scanning])
-
-  // 🔵 START CAMERA
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
-      })
-      videoRef.current.srcObject = stream
-      setScanning(true)
-    } catch (e) {
-      setMsg('Camera error: ' + e.message)
-    }
-  }
-
-  // 🔵 STOP CAMERA
-  const stopCamera = () => {
-    const stream = videoRef.current?.srcObject
-    if (stream) {
-      stream.getTracks().forEach(t => t.stop())
-    }
-    setScanning(false)
-  }
-
-  // 🔵 CAPTURE IMAGE (MANUAL BUTTON)
-  const captureImage = () => {
-    const video = videoRef.current
-    const canvas = canvasRef.current
-
-    if (!video || !canvas) return
-
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-
-    const ctx = canvas.getContext('2d')
-    ctx.drawImage(video, 0, 0)
-
-    const dataUrl = canvas.toDataURL('image/jpeg')
-
-    setImages(prev => [...prev, dataUrl])
-  }
-
-  // 🔵 ADD TAG
   const addTag = (tag) => {
-    if (!tag) return
-    if (tags.includes(tag)) return
-
-    setTags(prev => [...prev, tag])
+    if (!tags.includes(tag)) setTags([...tags, tag])
   }
 
-  // 🔵 DOWNLOAD IMAGES
-  const downloadImages = () => {
-    images.forEach((img, i) => {
-      const a = document.createElement('a')
-      a.href = img
-      a.download = `scan_${i + 1}.jpg`
-      a.click()
-    })
-  }
-
-  // 🔵 DOWNLOAD CSV
-  const downloadCSV = () => {
-    if (!location) {
-      setMsg('Select destination location')
-      return
-    }
-
-    const header = ['Label', 'LocationName']
-
-    const rows = tags.map(tag => [tag, location])
-
+  const exportCSV = () => {
     const csv = [
-      header.join(','),
-      ...rows.map(r => r.join(','))
+      'Label,LocationName',
+      ...tags.map(t => `${t},${location}`)
     ].join('\n')
 
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-
+    const blob = new Blob([csv])
     const a = document.createElement('a')
-    a.href = url
-    a.download = 'metrc_move_upload.csv'
+    a.href = URL.createObjectURL(blob)
+    a.download = 'moves.csv'
     a.click()
-
-    URL.revokeObjectURL(url)
-  }
-
-  // 🔵 FINALIZE
-  const finalize = () => {
-    stopCamera()
-    downloadImages()
-    downloadCSV()
-    setMsg('Export complete')
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="space-y-3">
 
-      {/* CAMERA */}
-      <div className="bg-gray-900 h-[300px] flex items-center justify-center rounded">
-        <video ref={videoRef} autoPlay className="h-full" />
-      </div>
+      <BarcodeScanner onScan={addTag} />
 
-      <canvas ref={canvasRef} className="hidden" />
-
-      {/* CAMERA CONTROLS */}
-      <div className="flex gap-2">
-        <button onClick={startCamera} className="btn-primary">
-          Start Camera
-        </button>
-
-        <button onClick={captureImage} className="btn-secondary">
-          Take Photo
-        </button>
-
-        <button onClick={stopCamera} className="btn-danger">
-          Stop
-        </button>
-      </div>
-
-      {/* SCANNER INPUT */}
-      {scanning && (
-        <input
-          ref={inputRef}
-          autoFocus
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              addTag(e.target.value.trim())
-              e.target.value = ''
-            }
-          }}
-          placeholder="Scan barcode..."
-          className="input-field text-lg"
-        />
-      )}
-
-      {/* TAG LIST */}
       <div className="card">
-        <div className="font-bold mb-2">
-          Scanned ({tags.length})
-        </div>
-
-        <div className="max-h-[200px] overflow-y-auto text-sm space-y-1">
-          {tags.map((t, i) => (
-            <div key={i}>{t}</div>
-          ))}
-        </div>
+        {tags.map((t, i) => <div key={i}>{t}</div>)}
       </div>
 
-      {/* LOCATION */}
-      <div className="card space-y-2">
+      <input
+        placeholder="Destination"
+        className="input-field"
+        onChange={(e) => setLocation(e.target.value)}
+      />
 
-        <select
-          className="input-field"
-          onChange={(e) => setLocation(e.target.value)}
-        >
-          <option>Select destination...</option>
-          <option>Veg1</option>
-          <option>Veg2</option>
-          <option>Veg3</option>
-          <option>Veg4</option>
-          <option>F1</option>
-          <option>F2</option>
-          <option>F3</option>
-          <option>F4</option>
-          <option>F5</option>
-          <option>F6</option>
-          <option>F7</option>
-          <option>F8</option>
-          <option>F9</option>
-          <option>H1</option>
-          <option>H2</option>
-        </select>
-
-        <button onClick={finalize} className="btn-primary">
-          Confirm & Export
-        </button>
-
-      </div>
-
-      {msg && <div className="text-green-400">{msg}</div>}
+      <button onClick={exportCSV} className="btn-primary w-full">
+        Export CSV
+      </button>
 
     </div>
   )
