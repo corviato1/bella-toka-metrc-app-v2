@@ -23,23 +23,31 @@ export default function OfflinePage() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="grid md:grid-cols-2 gap-4">
 
-      <BarcodeScanner onScan={addTag} />
-
-      <div className="card">
-        {tags.map((t, i) => <div key={i}>{t}</div>)}
+      <div className="card space-y-3">
+        <h2 className="font-bold text-lg">Scan Offline</h2>
+        <BarcodeScanner onScan={addTag} />
+        <div>Count: {tags.length}</div>
       </div>
 
-      <input
-        placeholder="Destination"
-        className="input-field"
-        onChange={(e) => setLocation(e.target.value)}
-      />
+      <div className="card space-y-3">
+        <h2 className="font-bold text-lg">Export</h2>
 
-      <button onClick={exportCSV} className="btn-primary w-full">
-        Export CSV
-      </button>
+        <input
+          placeholder="Destination"
+          className="input-field"
+          onChange={(e) => setLocation(e.target.value)}
+        />
+
+        <button onClick={exportCSV} className="btn-primary w-full">
+          Export CSV
+        </button>
+
+        <div className="max-h-[300px] overflow-y-auto text-sm">
+          {tags.map((t, i) => <div key={i}>{t}</div>)}
+        </div>
+      </div>
 
     </div>
   )

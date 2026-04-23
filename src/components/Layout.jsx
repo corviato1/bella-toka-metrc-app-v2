@@ -14,12 +14,14 @@ export default function Layout() {
     <div className="flex flex-col min-h-screen">
 
       {/* HEADER */}
-      <header className="bg-gray-900 text-white p-2 flex overflow-x-auto">
+      <header className="bg-gray-900 text-white p-3 flex gap-2 overflow-x-auto">
         {tabs.map((tab) => (
           <NavLink
             key={tab.to}
             to={tab.to}
-            className="px-3 py-2 whitespace-nowrap"
+            className={({ isActive }) =>
+              `nav-tab ${isActive ? 'bg-sage-500' : 'bg-gray-700'}`
+            }
           >
             {tab.label}
           </NavLink>
@@ -27,10 +29,9 @@ export default function Layout() {
       </header>
 
       {/* CONTENT */}
-      <main className="flex-1 overflow-y-auto p-2">
+      <main className="flex-1 overflow-y-auto p-3">
         <Outlet />
       </main>
-
     </div>
   )
 }

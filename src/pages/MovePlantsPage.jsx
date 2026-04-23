@@ -10,23 +10,35 @@ export default function MovePlantsPage() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="grid md:grid-cols-2 gap-4">
 
-      <BarcodeScanner onScan={addTag} />
-
-      <div className="card">
-        {tags.map((t, i) => <div key={i}>{t}</div>)}
+      {/* LEFT: SCAN */}
+      <div className="card space-y-3">
+        <h2 className="font-bold text-lg">Scan Plants</h2>
+        <BarcodeScanner onScan={addTag} />
+        <div className="text-sm text-gray-500">
+          Count: {tags.length}
+        </div>
       </div>
 
-      <input
-        placeholder="Destination"
-        className="input-field"
-        onChange={(e) => setLocation(e.target.value)}
-      />
+      {/* RIGHT: ACTION */}
+      <div className="card space-y-3">
+        <h2 className="font-bold text-lg">Move To</h2>
 
-      <button className="btn-primary w-full">
-        Move Plants
-      </button>
+        <input
+          placeholder="Destination"
+          className="input-field"
+          onChange={(e) => setLocation(e.target.value)}
+        />
+
+        <button className="btn-primary w-full">
+          Move Plants
+        </button>
+
+        <div className="max-h-[300px] overflow-y-auto text-sm">
+          {tags.map((t, i) => <div key={i}>{t}</div>)}
+        </div>
+      </div>
 
     </div>
   )

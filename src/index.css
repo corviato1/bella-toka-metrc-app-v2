@@ -10,33 +10,29 @@
   }
 
   body {
-    @apply bg-gray-100 text-gray-900 dark:bg-charcoal-900 dark:text-gray-100 font-sans;
-    -webkit-font-smoothing: antialiased;
+    @apply bg-gray-100 text-gray-900 dark:bg-charcoal-900 dark:text-gray-100;
+    font-size: 18px; /* 👈 tablet readability */
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-sage-500 text-white font-semibold py-3 px-4 rounded-xl active:scale-95;
+    @apply bg-sage-500 text-white font-semibold py-4 px-6 rounded-2xl text-lg active:scale-95;
   }
 
   .btn-secondary {
-    @apply bg-gray-300 dark:bg-charcoal-600 py-3 px-4 rounded-xl;
-  }
-
-  .btn-danger {
-    @apply bg-red-600 text-white py-3 px-4 rounded-xl;
+    @apply bg-gray-200 dark:bg-charcoal-600 py-4 px-6 rounded-2xl text-lg;
   }
 
   .card {
-    @apply bg-white dark:bg-charcoal-800 rounded-xl p-4 border border-gray-200 dark:border-charcoal-600;
+    @apply bg-white dark:bg-charcoal-800 rounded-2xl p-5 border border-gray-200 dark:border-charcoal-600 shadow-sm;
   }
 
   .input-field {
-    @apply bg-white dark:bg-charcoal-700 border rounded-xl px-3 py-3 w-full;
+    @apply bg-white dark:bg-charcoal-700 border border-gray-300 dark:border-charcoal-500 text-lg rounded-2xl px-4 py-4 w-full;
   }
 
   .nav-tab {
-    @apply px-3 py-2 text-sm;
+    @apply px-4 py-3 text-base rounded-xl whitespace-nowrap;
   }
 }
